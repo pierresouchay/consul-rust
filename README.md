@@ -14,4 +14,4 @@ Rust client libray for Consul HTTP API
     }
 
 
-For more example, see the **tests** .
+For more example, see the **[tests](https://github.com/youngking/consul-rust/blob/master/src/test/basic.rs)** .
