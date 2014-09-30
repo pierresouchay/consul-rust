@@ -11,6 +11,9 @@ extern crate serialize;
 extern crate log;
 
 pub mod agent;
+pub mod catalog;
+pub mod structs;
+pub mod health;
 
 #[cfg(test)]
 mod test;
