@@ -20,6 +20,6 @@ For more example, see the **[tests](https://github.com/youngking/consul-rust/blo
 
 Simply include the consul-rust in your Cargo dependencies.
 
-[dependencies.consul]
+    [dependencies.consul]
 
-git = "git@github.com:youngking/consul-rust.git"
+    git = "git@github.com:youngking/consul-rust.git"
