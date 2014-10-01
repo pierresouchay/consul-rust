@@ -14,17 +14,17 @@ pub struct HealthService{
 
 
 pub struct Health{
-    address: &'static str,
+    address: String,
 }
 
 impl Health {
 
-    pub fn new(address: &'static str) -> Health {
-        Health{address: address}
+    pub fn new(address: &str) -> Health {
+        Health{address: address.to_string()}
     }
 
     pub fn service(&self, name: &'static str) -> Vec<HealthService> {
-        let url = self.address.to_string() + "/health/service/" + name;
+        let url = self.address + "/health/service/" + name;
         let resp = http::handle().get(url).exec().unwrap();
         let result = from_utf8(resp.get_body()).unwrap();
         json::decode(result).unwrap()
