@@ -23,6 +23,8 @@ pub fn test_catalog(){
 #[test]
 pub fn test_health(){
     let health = Health::new("http://localhost:8500/v1");
-    let list: Vec<HealthService> = health.service("redis");
+    let list: Vec<HealthService> = health.service("redis", "release");
     assert_eq!(list.len(), 1);
+    let list: Vec<HealthService> = health.service("redis", "release2");
+    assert_eq!(list.len(), 0);
 }
