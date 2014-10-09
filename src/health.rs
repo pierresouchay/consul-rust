@@ -6,7 +6,7 @@ use curl::http;
 use structs::{Node, Service};
 
 
-#[deriving(Decodable, Show)]
+#[deriving(Decodable, Encodable, Show)]
 pub struct HealthService{
     Node: Node,
     Service: Service,

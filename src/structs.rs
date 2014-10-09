@@ -1,12 +1,12 @@
 #![allow(non_snake_case)]
 
-#[deriving(Decodable, Show)]
+#[deriving(Decodable,Encodable,Show)]
 pub struct Node {
     Node: String,
     Address: String,
 }
 
-#[deriving(Decodable, Show)]
+#[deriving(Decodable,Encodable,Show)]
 pub struct Service {
     ID: String,
     pub Service: String,

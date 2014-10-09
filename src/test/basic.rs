@@ -3,6 +3,7 @@ use agent::Agent;
 use catalog::Catalog;
 use health::{Health, HealthService};
 use structs::Service;
+use serialize::json;
 
 
 #[test]
@@ -23,8 +24,9 @@ pub fn test_catalog(){
 #[test]
 pub fn test_health(){
     let health = Health::new("http://localhost:8500/v1");
-    let list: Vec<HealthService> = health.service("redis", "release");
-    assert_eq!(list.len(), 1);
-    let list: Vec<HealthService> = health.service("redis", "release2");
-    assert_eq!(list.len(), 0);
+    let list1: Vec<HealthService> = health.service("redis", "release");
+    assert_eq!(list1.len(), 1);
+    let list2: Vec<HealthService> = health.service("redis", "release2");
+    assert_eq!(list2.len(), 0);
+    println!("{}", json::encode(&list1));
 }
