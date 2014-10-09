@@ -9,7 +9,7 @@ pub struct Node {
 #[deriving(Decodable, Show)]
 pub struct Service {
     ID: String,
-    Service: String,
-    Tags: Vec<String>,
-    Port: int,
+    pub Service: String,
+    pub Tags: Vec<String>,
+    pub Port: int,
 }
