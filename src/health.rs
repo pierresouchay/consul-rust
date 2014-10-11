@@ -8,8 +8,8 @@ use structs::{Node, Service};
 
 #[deriving(Decodable, Encodable, Show)]
 pub struct HealthService{
-    Node: Node,
-    Service: Service,
+    pub Node: Node,
+    pub Service: Service,
 }
 
 
