@@ -2,8 +2,8 @@
 
 #[deriving(Decodable,Encodable,Show)]
 pub struct Node {
-    Node: String,
-    Address: String,
+    pub Node: String,
+    pub Address: String,
 }
 
 #[deriving(Decodable,Encodable,Show)]
