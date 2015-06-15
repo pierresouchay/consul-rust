@@ -2,8 +2,7 @@ language: rust
 before_install:
   - curl -L -o /tmp/consul.zip https://dl.bintray.com/mitchellh/consul/0.5.2_linux_amd64.zip
   - unzip /tmp/consul.zip
-  - mv consul ~/bin/
-  - ~/bin/consul agent -config-file data/consul-test.json > /tmp/consul.log &
+  - consul agent -config-file data/consul-test.json > /tmp/consul.log &
 script:
   - sh data/register.sh
   - cargo build -v

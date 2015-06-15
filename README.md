@@ -3,7 +3,7 @@
 [![Build Status](https://travis-ci.org/youngking/consul-rust.svg)](https://travis-ci.org/youngking/consul-rust)
 
 
-Rust client libray for Consul HTTP API
+Rust client libray for [Consul](http://consul.io/) HTTP API
 
 ### Usage
 
