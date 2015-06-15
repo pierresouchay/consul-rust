@@ -7,6 +7,7 @@ Rust client libray for Consul HTTP API
 
 ### Usage
 
+```
     extern crate consul;
 
     use std::collections::HashMap;
@@ -16,6 +17,7 @@ Rust client libray for Consul HTTP API
         let services: HashMap<String, Vec<String>> = catalog1.services();
         println!("{}", services);
     }
+```
 
 
 For more example, see the **[tests](https://github.com/youngking/consul-rust/blob/master/src/test/basic.rs)** .
@@ -24,5 +26,7 @@ For more example, see the **[tests](https://github.com/youngking/consul-rust/blo
 
 Simply include the consul-rust in your Cargo dependencies.
 
-    [dependencies.consul]
-    git = "https://github.com/youngking/consul-rust"
+```
+[dependencies]
+consul = "*"
+```
