@@ -1,5 +1,8 @@
 ## consul-rust (Incomplete implement)
 
+[![Build Status](https://travis-ci.org/youngking/consul-rust.svg)](https://travis-ci.org/youngking/consul-rust)
+
+
 Rust client libray for Consul HTTP API
 
 ### Usage
