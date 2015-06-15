@@ -2,7 +2,7 @@
 
 use std::str::from_utf8;
 use std::collections::HashMap;
-use serialize::json;
+use rustc_serialize::json;
 
 use curl::http;
 
@@ -19,7 +19,7 @@ impl Agent {
     }
 
     pub fn services(&self) -> HashMap<String, Service> {
-        let url = self.address + "/agent/services";
+        let url = format!("{}/agent/services", self.address);
         let resp = http::handle().get(url).exec().unwrap();
         let result = from_utf8(resp.get_body()).unwrap();
         json::decode(result).unwrap()

@@ -4,5 +4,6 @@ name = "consul"
 version = "0.0.1"
 authors = ["YoungKing <yanckin@gmail.com>"]
 
-[dependencies.curl]
-git = "https://github.com/carllerche/curl-rust"
+[dependencies]
+curl = "0.2.10"
+rustc-serialize = "0.3.15"

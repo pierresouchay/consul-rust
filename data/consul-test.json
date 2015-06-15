@@ -1,0 +1,6 @@
+{
+  "bootstrap": true,
+  "data_dir": "/tmp/consul",
+  "datacenter": "dc1",
+  "server": true
+}

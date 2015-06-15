@@ -1,15 +1,15 @@
 #![allow(non_snake_case)]
 
-#[deriving(Decodable,Encodable,Show)]
+#[derive(RustcDecodable, RustcEncodable)]
 pub struct Node {
     pub Node: String,
     pub Address: String,
 }
 
-#[deriving(Decodable,Encodable,Show)]
+#[derive(RustcDecodable, RustcEncodable)]
 pub struct Service {
     ID: String,
     pub Service: String,
     pub Tags: Vec<String>,
-    pub Port: int,
+    pub Port: u32,
 }
