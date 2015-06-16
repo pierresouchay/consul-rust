@@ -19,7 +19,7 @@ impl Agent {
     }
 
     pub fn services(&self) -> HashMap<String, Service> {
-        let url = format!("{}/agent/services", self.address);
+        let url = format!("{}/v1/agent/services", self.address);
         let resp = http::handle().get(url).exec().unwrap();
         let result = from_utf8(resp.get_body()).unwrap();
         json::decode(result).unwrap()

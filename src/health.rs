@@ -35,9 +35,9 @@ impl Health {
    pub fn service(&self, name: &str, tags: &str) -> Vec<HealthService>{
        let url = 
              if tags == "" {
-                 format!("{}/health/service/{}", self.address, name)
+                 format!("{}/v1/health/service/{}", self.address, name)
              } else {
-                 format!("{}/health/service/{}?tag={}", self.address, name, tags)
+                 format!("{}/v1/health/service/{}?tag={}", self.address, name, tags)
              };
              
         self.request(&url)

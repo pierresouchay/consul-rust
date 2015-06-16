@@ -13,7 +13,7 @@ Rust client libray for [Consul](http://consul.io/) HTTP API
     use std::collections::HashMap;
 
     fn main(){
-        let catalog1 = consul::catalog::Catalog::new("http://localhost:8500/v1");
+        let catalog1 = consul::catalog::Catalog::new("127.0.0.1:8500");
         let services: HashMap<String, Vec<String>> = catalog1.services();
         println!("{}", services);
     }
