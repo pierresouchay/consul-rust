@@ -1,28 +1,21 @@
 #![allow(non_snake_case)]
 use std::str::from_utf8;
 
-use rustc_serialize::json;
 use curl::http;
+use rustc_serialize::json;
 
-use structs::{Node, Service};
-
-
-#[derive(RustcDecodable, RustcEncodable)]
-pub struct HealthService{
-    pub Node: Node,
-    pub Service: Service,
-}
+use structs::HealthService;
 
 
 pub struct Health{
-    address: String,
+    endpoint: String,
 }
 
 
 impl Health {
 
     pub fn new(address: &str) -> Health {
-        Health{address: address.to_string()}
+        Health{endpoint: format!("{}/v1/health", address)}
     }
 
     fn request(&self, url: &str) -> Vec<HealthService> {
@@ -35,9 +28,9 @@ impl Health {
    pub fn service(&self, name: &str, tags: &str) -> Vec<HealthService>{
        let url = 
              if tags == "" {
-                 format!("{}/v1/health/service/{}", self.address, name)
+                 format!("{}/service/{}", self.endpoint, name)
              } else {
-                 format!("{}/v1/health/service/{}?tag={}", self.address, name, tags)
+                 format!("{}/service/{}?tag={}", self.endpoint, name, tags)
              };
              
         self.request(&url)

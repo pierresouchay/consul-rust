@@ -8,8 +8,15 @@ pub struct Node {
 
 #[derive(RustcDecodable, RustcEncodable)]
 pub struct Service {
-    ID: String,
+    pub ID: String,
     pub Service: String,
     pub Tags: Vec<String>,
     pub Port: u32,
+}
+
+
+#[derive(RustcDecodable, RustcEncodable)]
+pub struct HealthService{
+    pub Node: Node,
+    pub Service: Service,
 }

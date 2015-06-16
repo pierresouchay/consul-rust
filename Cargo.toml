@@ -3,7 +3,7 @@
 name = "consul"
 description = "Rust client libray for Consul HTTP API"
 repository = "https://github.com/youngking/consul-rust"
-version = "0.0.2"
+version = "0.0.3"
 license = "MIT"
 authors = ["YoungKing <yanckin@gmail.com>"]
 keywords = ["consul", "discovery"]
