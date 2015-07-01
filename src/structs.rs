@@ -1,12 +1,14 @@
 #![allow(non_snake_case)]
 
+/// Node represents a node
 #[derive(RustcDecodable, RustcEncodable)]
 pub struct Node {
     pub Node: String,
     pub Address: String,
 }
 
-#[derive(RustcDecodable, RustcEncodable)]
+/// Service represents a service
+#[derive(RustcDecodable, RustcEncodable, Debug)]
 pub struct Service {
     pub ID: String,
     pub Service: String,
@@ -14,7 +16,7 @@ pub struct Service {
     pub Port: u32,
 }
 
-
+/// HealthService is used for the health service
 #[derive(RustcDecodable, RustcEncodable)]
 pub struct HealthService{
     pub Node: Node,

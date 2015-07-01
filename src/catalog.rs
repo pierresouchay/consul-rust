@@ -1,9 +1,10 @@
 use std::str::from_utf8;
 use std::collections::HashMap;
-use rustc_serialize::json;
 
+use rustc_serialize::json;
 use curl::http;
 
+/// Catalog can be used to query the Catalog endpoints
 pub struct Catalog{
     endpoint: String,
 }

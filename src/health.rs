@@ -1,12 +1,11 @@
-#![allow(non_snake_case)]
 use std::str::from_utf8;
 
 use curl::http;
 use rustc_serialize::json;
 
-use structs::HealthService;
+use super::HealthService;
 
-
+/// Health can be used to query the Health endpoints
 pub struct Health{
     endpoint: String,
 }
@@ -24,15 +23,15 @@ impl Health {
         json::decode(result).unwrap()
     }
 
-   // Rust does not support default parameters or optional parameters for now, so `tags` must be provided
-   pub fn service(&self, name: &str, tags: &str) -> Vec<HealthService>{
-       let url = 
-             if tags == "" {
+   // Rust does not support default parameters or optional parameters for now, so `tag` must be provided
+   pub fn service(&self, name: &str, tag: &str) -> Vec<HealthService>{
+       let url =
+             if tag == "" {
                  format!("{}/service/{}", self.endpoint, name)
              } else {
-                 format!("{}/service/{}?tag={}", self.endpoint, name, tags)
+                 format!("{}/service/{}?tag={}", self.endpoint, name, tag)
              };
-             
+
         self.request(&url)
    }
 }

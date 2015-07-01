@@ -3,7 +3,7 @@
 [![Build Status](https://travis-ci.org/youngking/consul-rust.svg)](https://travis-ci.org/youngking/consul-rust)
 [![](https://img.shields.io/crates/v/consul.svg)](https://crates.io/crates/consul)
 
-
+[Documentation here](http://youngking.github.io/consul-rust/consul/).
 
 Rust client libray for [Consul](http://consul.io/) HTTP API
 
@@ -13,12 +13,12 @@ Rust client libray for [Consul](http://consul.io/) HTTP API
     extern crate consul;
 
     use std::collections::HashMap;
-    use consul::client::Client;
+    use consul::Client;
 
     fn main(){
         let client = Client::new("127.0.0.1:8500");
         let services: HashMap<String, Vec<String>> = client.catalog.services();
-        println!("{}", services);
+        println!("{:?}", services);
     }
 ```
 

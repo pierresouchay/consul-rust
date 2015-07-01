@@ -1,5 +1,6 @@
 {
   "bootstrap": true,
+  "bind_addr": "127.0.0.1",
   "data_dir": "/tmp/consul",
   "datacenter": "dc1",
   "server": true

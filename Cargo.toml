@@ -1,11 +1,14 @@
 [package]
 
 name = "consul"
-description = "Rust client libray for Consul HTTP API"
-repository = "https://github.com/youngking/consul-rust"
-version = "0.0.3"
-license = "MIT"
+version = "0.0.4"
 authors = ["YoungKing <yanckin@gmail.com>"]
+description = "Rust client libray for Consul HTTP API"
+documentation = "http://youngking.github.io/consul-rust/consul/"
+repository = "https://github.com/youngking/consul-rust"
+license = "MIT"
+
+readme = "README.md"
 keywords = ["consul", "discovery"]
 
 exclude = [
