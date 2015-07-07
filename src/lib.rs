@@ -45,6 +45,3 @@ mod catalog;
 mod structs;
 mod health;
 mod client;
-
-#[cfg(test)]
-mod test;

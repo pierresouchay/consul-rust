@@ -23,7 +23,7 @@ Rust client libray for [Consul](http://consul.io/) HTTP API
 ```
 
 
-For more example, see the **[tests](https://github.com/youngking/consul-rust/blob/master/src/test/basic.rs)** .
+For more example, see the **[tests](https://github.com/youngking/consul-rust/blob/master/tests/example.rs)** .
 
 ### Installation
 

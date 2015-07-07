@@ -20,7 +20,7 @@ pub struct AgentMember {
 	Addr: String,
 	Port: u16,
 	Tags: HashMap<String, String>,
-	Status: u32,
+	Status: usize,
 	ProtocolMin: u8,
 	ProtocolMax: u8,
 	ProtocolCur: u8,
