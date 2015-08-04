@@ -38,7 +38,7 @@ pub use agent::{Agent, AgentMember};
 pub use catalog::Catalog;
 pub use health::Health;
 pub use client::Client;
-pub use structs::{Node, Service, HealthService};
+pub use structs::{Node, Service, HealthService, RegisterService};
 
 mod agent;
 mod catalog;

@@ -6,7 +6,7 @@ use std::collections::HashMap;
 use rustc_serialize::json;
 use curl::http;
 
-use super::Service;
+use super::{Service, RegisterService};
 
 /// Agent can be used to query the Agent endpoints
 pub struct Agent{
@@ -29,7 +29,6 @@ pub struct AgentMember {
 	DelegateCur: u8
 }
 
-
 impl Agent {
 
     pub fn new(address: &str) -> Agent {
@@ -49,4 +48,19 @@ impl Agent {
         let result = from_utf8(resp.get_body()).unwrap();
         json::decode(result).unwrap()
     }
+
+    pub fn register(&self, service: RegisterService) {
+        let url = format!("{}/service/register", self.endpoint);
+        let json_str = json::encode(&service).unwrap();
+        println!("About to send: {:?}", json_str);
+        
+        let resp = http::handle()
+            .put(url, &json_str)
+            .content_type("application/json")
+            .exec().unwrap();
+        println!("Resp Code: {:?}, body: {:?}", resp.get_code(), resp.get_body());
+//         let result = from_utf8(resp.get_body()).unwrap();
+//         json::decode(result).unwrap()
+    }
+    
 }
