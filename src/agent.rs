@@ -29,6 +29,7 @@ pub struct AgentMember {
 	DelegateCur: u8
 }
 
+
 impl Agent {
 
     pub fn new(address: &str) -> Agent {
@@ -52,15 +53,13 @@ impl Agent {
     pub fn register(&self, service: RegisterService) {
         let url = format!("{}/service/register", self.endpoint);
         let json_str = json::encode(&service).unwrap();
-        println!("About to send: {:?}", json_str);
-        
         let resp = http::handle()
             .put(url, &json_str)
             .content_type("application/json")
             .exec().unwrap();
-        println!("Resp Code: {:?}, body: {:?}", resp.get_code(), resp.get_body());
-//         let result = from_utf8(resp.get_body()).unwrap();
-//         json::decode(result).unwrap()
+        if resp.get_code() != 200 {
+            panic!("Consul: Error registering a service!");
+        }
     }
     
 }

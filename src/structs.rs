@@ -1,7 +1,7 @@
 #![allow(non_snake_case)]
 
 /// Node represents a node
-#[derive(RustcDecodable, RustcEncodable)]
+#[derive(RustcDecodable, RustcEncodable, Debug)]
 pub struct Node {
     pub Node: String,
     pub Address: String,
