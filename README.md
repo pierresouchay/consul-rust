@@ -1,4 +1,4 @@
-## consul-rust (Incomplete implement)
+## consul-rust (Work In Progress)
 
 [![Build Status](https://travis-ci.org/youngking/consul-rust.svg)](https://travis-ci.org/youngking/consul-rust)
 [![](https://img.shields.io/crates/v/consul.svg)](https://crates.io/crates/consul)

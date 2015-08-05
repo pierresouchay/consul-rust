@@ -4,7 +4,7 @@ use std::str::from_utf8;
 use std::collections::HashMap;
 
 use rustc_serialize::json;
-use curl::http;
+use curl::{http, ErrCode};
 
 use super::Service;
 
@@ -29,6 +29,15 @@ pub struct AgentMember {
 	DelegateCur: u8
 }
 
+/// AgentServiceRegistration is used to register a new service
+#[derive(RustcDecodable, RustcEncodable)]
+pub struct AgentServiceRegistration{
+    ID: String,
+    Name: String,
+    Tags: Vec<String>,
+    Port: u16,
+    Address: String
+}
 
 impl Agent {
 
@@ -48,5 +57,16 @@ impl Agent {
         let resp = http::handle().get(url).exec().unwrap();
         let result = from_utf8(resp.get_body()).unwrap();
         json::decode(result).unwrap()
+    }
+
+    pub fn service_register(&self, service: AgentServiceRegistration) -> Result<(), ErrCode> {
+        let url = format!("{}/service/register", self.endpoint);
+        let service_string :String = json::encode(&service).unwrap();
+        let result = match http::handle().put(url, &service_string[..]).exec() {
+            Ok(_) => Ok(()),
+            Err(e) => Err(e),
+        };
+        result
+
     }
 }

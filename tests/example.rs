@@ -9,11 +9,14 @@ use rustc_serialize::json;
 #[test]
 pub fn test_agent() {
     let client = consul::Client::new("127.0.0.1:8500");
+    // list services
     let services: HashMap<String, consul::Service> = client.agent.services();
     assert!(services.contains_key("consul"));
+    // list members
     let members:  Vec<consul::AgentMember> = client.agent.members();
     assert_eq!(members.len(), 1);
-    println!("{:?}", json::encode(&members))
+    println!("{:?}", json::encode(&members));
+    // list
 }
 
 #[test]

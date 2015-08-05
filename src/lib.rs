@@ -30,6 +30,7 @@
 #![crate_name = "consul"]
 #![crate_type = "lib"]
 
+#[doc(no_inline)]
 extern crate curl;
 extern crate rustc_serialize;
 
