@@ -39,15 +39,22 @@ impl Catalog {
         let url = format!("{}/service/{}", self.endpoint, service);
         let resp = http::handle().get(url).exec().unwrap();
         let result = from_utf8(resp.get_body()).unwrap();
-        let nodes: Vec<ServiceNode> = json::decode(result).unwrap();
-        let mut filtered: Vec<Node> = Vec::with_capacity(nodes.len());
-        for node in nodes {
+        let json_data = match json::Json::from_str(result) {
+            Ok(value) => value,
+            Err(err) => panic!("consul: Could not convert to json: {:?}", result)
+        };
+        let v_nodes = json_data.as_array().unwrap();
+        let mut filtered: Vec<Node> = Vec::new();
+        for node in v_nodes.iter() {
+            let node_value = super::get_string(node, &["Node"]);
+            let address = super::get_string(node, &["Address"]);
             filtered.push(Node {
-                Node: node.Node,
-                Address: node.Address
+               Node: node_value,
+               Address: address
             });
         }
         filtered
     }
+    
 
 }

@@ -38,10 +38,25 @@ pub use agent::{Agent, AgentMember};
 pub use catalog::Catalog;
 pub use health::Health;
 pub use client::Client;
-pub use structs::{Node, Service, HealthService, RegisterService};
+pub use structs::{Node, Service, HealthService, RegisterService, TtlHealthCheck};
 
 mod agent;
 mod catalog;
 mod structs;
 mod health;
 mod client;
+
+use rustc_serialize::json;
+
+#[inline]
+pub fn get_string(json_data: &json::Json, path: &[&str]) -> String {
+    let value = match json_data.find_path(path) {
+        Some(value) => value,
+        None => panic!("Value Not Found for path: {:?}", path)
+    };
+    let s_value = match value.as_string() {
+        Some(value) => value,
+        None => panic!("Could not convert '{:?}' to String", value)
+    };
+    s_value.to_owned()
+}

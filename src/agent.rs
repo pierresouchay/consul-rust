@@ -6,7 +6,7 @@ use std::collections::HashMap;
 use rustc_serialize::json;
 use curl::http;
 
-use super::{Service, RegisterService};
+use super::{Service, RegisterService, TtlHealthCheck};
 
 /// Agent can be used to query the Agent endpoints
 pub struct Agent{
@@ -62,4 +62,15 @@ impl Agent {
         }
     }
     
+    pub fn register_ttl_check(&self, health_check: TtlHealthCheck) {
+        let url = format!("{}/check/register", self.endpoint);
+        let json_str = json::encode(&health_check).unwrap();
+        let resp = http::handle()
+            .put(url, &json_str)
+            .content_type("application/json")
+            .exec().unwrap();
+        if resp.get_code() != 200 {
+            panic!("Consul: Error registering a health check!");
+        }
+    }
 }

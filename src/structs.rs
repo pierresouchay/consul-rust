@@ -31,3 +31,12 @@ pub struct RegisterService {
     pub Tags: Vec<String>,
     pub Port: u32,
 }
+
+#[derive(RustcDecodable, RustcEncodable, Debug)]
+pub struct TtlHealthCheck {
+    pub ServiceID: String,
+    pub ID: String,
+    pub Name: String,
+    pub Notes: String,
+    pub TTL: String
+}
