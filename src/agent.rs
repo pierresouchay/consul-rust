@@ -73,4 +73,10 @@ impl Agent {
             panic!("Consul: Error registering a health check!");
         }
     }
+    
+    pub fn check_pass(&self, service_id: String) {
+        let url = format!("{}/check/pass/{}", self.endpoint, service_id);
+        let resp = http::handle().get(url).exec().unwrap();
+    }
+
 }
