@@ -40,3 +40,4 @@ pub struct TtlHealthCheck {
     pub Notes: String,
     pub TTL: String
 }
+

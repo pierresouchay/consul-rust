@@ -38,6 +38,8 @@ pub use agent::{Agent, AgentMember};
 pub use catalog::Catalog;
 pub use health::Health;
 pub use client::Client;
+pub use keystore::Keystore;
+pub use session::Session;
 pub use structs::{Node, Service, HealthService, RegisterService, TtlHealthCheck};
 
 mod agent;
@@ -45,6 +47,8 @@ mod catalog;
 mod structs;
 mod health;
 mod client;
+mod session;
+mod keystore;
 
 use rustc_serialize::json;
 
