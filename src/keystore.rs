@@ -68,8 +68,22 @@ impl Keystore {
             Err(err) => panic!("consul: Could not convert to json: {:?}", result)
         };
         let v_json = json_data.as_array().unwrap();
-        println!("Key data: {:?}", v_json[0]);
         super::get_string(&v_json[0], &["Value"])
     }
 
+    pub fn delete_key(&self, key: String) {
+        let url;
+        if key.to_owned().into_bytes()[0] == 0x2f {
+            url = format!("{}{}", self.endpoint, key);
+        }
+        else {
+            url = format!("{}/{}", self.endpoint, key);
+        }
+        let resp = http::handle().delete(url).exec().unwrap();
+        let result = from_utf8(resp.get_body()).unwrap();
+        if resp.get_code() != 200 {
+            panic!("Could not delete key: {}", key);
+        }
+    }
+    
 }

@@ -6,7 +6,7 @@ use std::collections::HashMap;
 use rustc_serialize::json;
 use curl::http;
 
-pub const SESSION_TTL: &'static str = "30s";
+pub const SESSION_TTL: &'static str = "10s";
 
 #[derive(RustcDecodable, RustcEncodable, Debug)]
 pub struct SessionCreate {
@@ -61,6 +61,18 @@ impl Session {
             .exec().unwrap();
         if resp.get_code() != 200 {
             panic!("Cound not renew session: {}", session_id);
+        }
+        
+    }
+
+    pub fn end(&self, session_id: &String) {
+        let url = format!("{}/destroy/{}", self.endpoint, session_id);
+        let resp = http::handle()
+            .put(url, "")
+            .content_type("application/json")
+            .exec().unwrap();
+        if resp.get_code() != 200 {
+            panic!("Cound not destroy session: {}", session_id);
         }
         
     }
