@@ -32,13 +32,13 @@ impl Health {
         self.request(&url)
     }
    
-    pub fn get_healthy_nodes(&self, service_id: &str) -> Vec<String> {
+    pub fn get_healthy_nodes(&self, service_id: &str) -> Result<Vec<String>, String> {
         let url = format!("{}/checks/{}", self.endpoint, service_id);
         let resp = http::handle().get(url).exec().unwrap();
         let result = from_utf8(resp.get_body()).unwrap();
         let json_data = match json::Json::from_str(result) {
             Ok(value) => value,
-            Err(err) => panic!("consul: Could not convert to json: {:?}", result)
+            Err(err) => return Err(format!("consul: Could not convert to json: {:?}", result))
         };
         let v_nodes = json_data.as_array().unwrap();
         let mut filtered: Vec<String> = Vec::new();
@@ -49,6 +49,6 @@ impl Health {
                 filtered.push(node_value);
             }
         }
-        filtered
+        Ok(filtered)
     }
 }
