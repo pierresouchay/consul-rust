@@ -2,6 +2,7 @@
 
 use std::str::from_utf8;
 use std::collections::HashMap;
+use std::thread;
 
 use rustc_serialize::json;
 use curl::http;
@@ -55,13 +56,19 @@ impl Session {
     
     pub fn renew(&self, session_id: &String) {
         let url = format!("{}/renew/{}", self.endpoint, session_id);
-        let resp = http::handle()
-            .put(url, "")
-            .content_type("application/json")
-            .exec().unwrap();
-        if resp.get_code() != 200 {
-            panic!("Cound not renew session: {}", session_id);
+        
+        for _ in 0..10 {
+            let resp = http::handle()
+                .put(url.clone(), "")
+                .content_type("application/json")
+                .exec().unwrap();
+            if resp.get_code() != 200 {
+                println!("Cound not renew session: {}. Sleeping for 1 sec", session_id);
+                thread::sleep_ms(1000);
+            }
         }
+        panic!("Cound not renew session: {} after 10 tries. Panicing.", session_id);
+
         
     }
 
