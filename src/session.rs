@@ -64,10 +64,13 @@ impl Session {
                 .exec().unwrap();
             if resp.get_code() != 200 {
                 println!("Cound not renew session: {}. Sleeping for 1 sec", session_id);
+                if i == 10 {
+                    panic!("Cound not renew session: {} after 10 tries. Panicing.", session_id);
+                }
                 thread::sleep_ms(1000);
             }
         }
-        panic!("Cound not renew session: {} after 10 tries. Panicing.", session_id);
+        
 
         
     }
