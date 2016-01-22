@@ -16,5 +16,5 @@ exclude = [
 ]
 
 [dependencies]
-curl = "*"
-rustc-serialize = "*"
+curl = "0.2.16"
+rustc-serialize = "0.3.16"
