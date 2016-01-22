@@ -30,9 +30,9 @@ pub fn test_catalog(){
 #[test]
 pub fn test_health(){
     let client = consul::Client::new("127.0.0.1:8500");
-    let list1: Vec<consul::HealthService> = client.health.service("gsearch", "release");
+    let list1: Vec<consul::HealthService> = client.health.service("gsearch", Some("release"));
     assert_eq!(list1.len(), 1);
-    let list2: Vec<consul::HealthService> = client.health.service("redis", "release2");
+    let list2: Vec<consul::HealthService> = client.health.service("redis", None);
     assert_eq!(list2.len(), 0);
     println!("{:?}", json::encode(&list1));
 }
