@@ -68,6 +68,9 @@ impl Session {
                 }
                 thread::sleep_ms(1000);
             }
+            else {
+                break;
+            }
         }
         
 
