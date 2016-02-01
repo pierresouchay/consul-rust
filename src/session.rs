@@ -7,7 +7,7 @@ use std::thread;
 use rustc_serialize::json;
 use curl::http;
 
-pub const SESSION_TTL: &'static str = "10s";
+pub const SESSION_TTL: &'static str = "15s";
 
 #[derive(RustcDecodable, RustcEncodable, Debug)]
 pub struct SessionCreate {
