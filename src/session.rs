@@ -54,7 +54,7 @@ impl Session {
         super::get_string(&json_data, &["ID"])
     }
     
-    pub fn renew(&self, session_id: &String) {
+    pub fn renew(&self, session_id: &String) -> bool {
         for i in 0..10 {
             let url = format!("{}/renew/{}", self.endpoint, session_id);
             let resp = http::handle()
@@ -63,18 +63,13 @@ impl Session {
                 .exec().unwrap();
             if resp.get_code() != 200 {
                 println!("Could not renew ession: {}, returned HTTP code: {:?}. Sleeping for 1 sec", session_id, resp.get_code());
-                if i == 10 {
-                    panic!("Cound not renew session: {} after 10 tries. Panicing.", session_id);
-                }
                 thread::sleep_ms(1000);
             }
             else {
-                break;
+                return true;
             }
         }
-        
-
-        
+        false
     }
 
     pub fn end(&self, session_id: &String) {
