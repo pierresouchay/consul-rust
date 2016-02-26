@@ -1,4 +1,5 @@
-## consul-rust (Work In Progress)
+## consul-rust (Deprecated)
+This project is deprecated and no longer actively maintained
 
 [![Build Status](https://travis-ci.org/youngking/consul-rust.svg)](https://travis-ci.org/youngking/consul-rust)
 [![](https://img.shields.io/crates/v/consul.svg)](https://crates.io/crates/consul)
