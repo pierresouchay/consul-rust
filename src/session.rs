@@ -69,6 +69,7 @@ impl Session {
                 return true;
             }
         }
+        panic!("Could not renew session: {} after 10 tries.", session_id);
         false
     }
 
