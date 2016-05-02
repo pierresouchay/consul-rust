@@ -1,6 +1,8 @@
 #![allow(non_snake_case)]
 
 use std::str::from_utf8;
+use std::thread;
+use std::time::Duration;
 
 use rustc_serialize::json;
 use curl::http;
@@ -60,8 +62,8 @@ impl Session {
                 .content_type("application/json")
                 .exec().unwrap();
             if resp.get_code() != 200 {
-                println!("Could not renew ession: {}, returned HTTP code: {:?}", session_id, resp.get_code());
-                return false;
+                println!("Could not renew session: {}, returned HTTP code: {:?}. Sleeping for 2 seconds", session_id, resp.get_code());
+                thread::sleep(Duration::from_millis(2000u64));
             }
             else {
                 return true;
