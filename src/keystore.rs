@@ -40,7 +40,8 @@ impl Keystore {
             .content_type("application/json")
             .exec().unwrap();
         if resp.get_code() != 200 {
-            panic!("Consul: Error acquiring a lock!");
+            println!("Consul: Error acquiring a lock!");
+            return false;
         }
         let result = from_utf8(resp.get_body()).unwrap();
         if result == "true" {
