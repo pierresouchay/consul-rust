@@ -62,8 +62,14 @@ impl Session {
                 .content_type("application/json")
                 .exec().unwrap();
             if resp.get_code() != 200 {
-                println!("Could not renew session: {}, returned HTTP code: {:?}. Sleeping for 2 seconds", session_id, resp.get_code());
-                thread::sleep(Duration::from_millis(2000u64));
+                if resp.get_code == 404 {
+                    println!("Could not renew session: {}, returned HTTP code: {:?}. Returning false.", session_id, resp.get_code());
+                    return false;
+                }
+                else {
+                    println!("Could not renew session: {}, returned HTTP code: {:?}. Sleeping for 2 seconds", session_id, resp.get_code());
+                    thread::sleep(Duration::from_millis(2000u64));
+                }
             }
             else {
                 return true;
