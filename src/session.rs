@@ -62,7 +62,7 @@ impl Session {
                 .content_type("application/json")
                 .exec().unwrap();
             if resp.get_code() != 200 {
-                if resp.get_code == 404 {
+                if resp.get_code() == 404 {
                     println!("Could not renew session: {}, returned HTTP code: {:?}. Returning false.", session_id, resp.get_code());
                     return false;
                 }
