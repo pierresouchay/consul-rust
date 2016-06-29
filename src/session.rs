@@ -44,7 +44,8 @@ impl Session {
             .content_type("application/json")
             .exec().unwrap();
         if resp.get_code() != 200 {
-            panic!("Consul: Error creating a session! Response: {}", resp);
+            println!("Consul: Error creating a session! Response: {}", resp);
+            return None;
         }
         let result = from_utf8(resp.get_body()).unwrap();        
         let json_data = match json::Json::from_str(result) {
