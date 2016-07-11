@@ -1,12 +1,12 @@
 language: rust
 sudo: required
 rust:
-  - 1.0.0
-env:
-  global:
-    - secure: K2ha5d9/HImWea7AvyotXigPl5QmQ9sENSzzjjn+cIWOOMOpzKgoCH6BknsknLGaacIZ8OIOyId/f3ta9WgCwsibhxHxFjsod8pKSEXuVrbF2BBPjgnyK91tZVG14V8EKc3tosr5RTEGuW9kk9bZCxEftDlRx7l4XCBr48pzYRM=
+  - 1.7.0
+  - 1.8.0
+  - 1.9.0
+  - 1.10.0
 before_install:
-  - curl -L -o /tmp/consul.zip https://dl.bintray.com/mitchellh/consul/0.5.2_linux_amd64.zip
+  - curl -L -o /tmp/consul.zip https://releases.hashicorp.com/consul/0.6.4/consul_0.6.4_linux_amd64.zip
   - unzip /tmp/consul.zip
   - ./consul agent -config-file data/consul-test.json > /tmp/consul.log &
 script:
@@ -14,7 +14,3 @@ script:
   - sh data/register.sh
   - cargo test -v
   - cargo doc -v
-  - echo '<meta http-equiv=refresh content=0;url=libc/index.html>' > target/doc/index.html
-after_script:
-  - mv ./target/doc ./
-  - curl http://www.rust-ci.org/artifacts/put?t=$RUSTCI_TOKEN | sh
