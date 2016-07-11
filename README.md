@@ -1,5 +1,4 @@
-## consul-rust (Deprecated)
-This project is deprecated and no longer actively maintained
+## consul-rust 
 
 [![Build Status](https://travis-ci.org/stusmall/consul-rust.svg)](https://travis-ci.org/stusmall/consul-rust.svg)
 [![](https://img.shields.io/crates/v/consul.svg)](https://crates.io/crates/consul)
@@ -32,5 +31,5 @@ Simply include the consul-rust in your Cargo dependencies.
 
 ```
 [dependencies]
-consul = "*"
+consul = "0.0.5"
 ```
