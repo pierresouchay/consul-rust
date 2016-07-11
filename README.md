@@ -1,7 +1,7 @@
 ## consul-rust (Deprecated)
 This project is deprecated and no longer actively maintained
 
-[![Build Status](https://travis-ci.org/youngking/consul-rust.svg)](https://travis-ci.org/youngking/consul-rust)
+[![Build Status](https://travis-ci.org/stusmall/consul-rust.svg)](https://travis-ci.org/stusmall/consul-rust.svg)
 [![](https://img.shields.io/crates/v/consul.svg)](https://crates.io/crates/consul)
 
 [Documentation here](http://youngking.github.io/consul-rust/consul/).
