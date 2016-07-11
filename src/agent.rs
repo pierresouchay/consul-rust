@@ -76,27 +76,27 @@ impl Agent {
     
     pub fn check_pass(&self, service_id: String) {
         let url = format!("{}/check/pass/{}", self.endpoint, service_id);
-        let _resp = http::handle().get(url).exec().unwrap();
+        http::handle().get(url).exec().unwrap();
     }
 
-    pub fn get_self_name(&self) -> String {
+    pub fn get_self_name(&self) -> Option<String> {
         let url = format!("{}/self", self.endpoint);
         let resp = http::handle().get(url).exec().unwrap();
         let result = from_utf8(resp.get_body()).unwrap();
         let json_data = match json::Json::from_str(result) {
             Ok(value) => value,
-            Err(_) => panic!("consul: Could not convert to json: {:?}", result)
+            Err(err) => panic!("consul: Could not convert to json: {:?}, Err: {}", result, err)
         };
         super::get_string(&json_data, &["Config", "NodeName"])
     }
 
-    pub fn get_self_address(&self) -> String {
+    pub fn get_self_address(&self) -> Option<String> {
         let url = format!("{}/self", self.endpoint);
         let resp = http::handle().get(url).exec().unwrap();
         let result = from_utf8(resp.get_body()).unwrap();
         let json_data = match json::Json::from_str(result) {
             Ok(value) => value,
-            Err(_) => panic!("consul: Could not convert to json: {:?}", result)
+            Err(err) => panic!("consul: Could not convert to json: {:?}. Err: {}", result, err)
         };
         super::get_string(&json_data, &["Config", "AdvertiseAddr"])
     }

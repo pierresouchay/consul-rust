@@ -40,7 +40,8 @@ impl Keystore {
             .content_type("application/json")
             .exec().unwrap();
         if resp.get_code() != 200 {
-            panic!("Consul: Error acquiring a lock!");
+            println!("Consul: Error acquiring a lock!");
+            return false;
         }
         let result = from_utf8(resp.get_body()).unwrap();
         if result == "true" {
@@ -48,8 +49,30 @@ impl Keystore {
         }
         false
     }
+
+    pub fn release_lock(&self, key: String, address: &str, session_id: &String) -> bool {
+        let url;
+        if key.to_owned().into_bytes()[0] == 0x2f {
+            url = format!("{}{}?release={}", self.endpoint, key, session_id);
+        }
+        else {
+            url = format!("{}/{}?release={}", self.endpoint, key, session_id);
+        }
+        let resp = http::handle()
+            .put(url, address)
+            .content_type("application/json")
+            .exec().unwrap();
+        if resp.get_code() != 200 {
+            panic!("Consul: Error releasing a lock!");
+        }
+        let result = from_utf8(resp.get_body()).unwrap();
+        if result == "true" {
+            return true;
+        }
+        false
+    }    
     
-    pub fn get_key(&self, key: String) -> String {
+    pub fn get_key(&self, key: String) -> Option<String> {
         let url;
         if key.to_owned().into_bytes()[0] == 0x2f {
             url = format!("{}{}", self.endpoint, key);
@@ -60,11 +83,11 @@ impl Keystore {
         let resp = http::handle().get(url).exec().unwrap();
         let result = from_utf8(resp.get_body()).unwrap();
         if resp.get_code() != 200 {
-            return String::new();
+            return None;
         }
         let json_data = match json::Json::from_str(result) {
             Ok(value) => value,
-            Err(_) => panic!("consul: Could not convert to json: {:?}", result)
+            Err(err) => panic!("consul: Could not convert to json: {:?}. Err: {}", result, err)
         };
         let v_json = json_data.as_array().unwrap();
         super::get_string(&v_json[0], &["Value"])
@@ -79,7 +102,6 @@ impl Keystore {
             url = format!("{}/{}", self.endpoint, key);
         }
         let resp = http::handle().delete(url).exec().unwrap();
-        let _result = from_utf8(resp.get_body()).unwrap();
         if resp.get_code() != 200 {
             panic!("Could not delete key: {}", key);
         }
