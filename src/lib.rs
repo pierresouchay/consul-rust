@@ -54,14 +54,14 @@ mod keystore;
 use rustc_serialize::json;
 
 #[inline]
-pub fn get_string(json_data: &json::Json, path: &[&str]) -> String {
+pub fn get_string(json_data: &json::Json, path: &[&str]) -> Option<String> {
     let value = match json_data.find_path(path) {
         Some(value) => value,
-        None => panic!("Value Not Found for path: {:?}", path)
+        None => return None
     };
     let s_value = match value.as_string() {
         Some(value) => value,
-        None => panic!("Could not convert '{:?}' to String", value)
+        None => return None
     };
-    s_value.to_owned()
+    Some(s_value.to_owned())
 }
