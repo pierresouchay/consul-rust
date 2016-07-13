@@ -1,12 +1,12 @@
 [package]
 
 name = "consul"
-version = "0.0.5"
-authors = ["YoungKing <yanckin@gmail.com>"]
+version = "0.0.6"
+authors = ["YoungKing <yanckin@gmail.com>", "Stu Small <stuart.alan.small@gmail.com>"]
 description = "Rust client libray for Consul HTTP API"
 documentation = "http://youngking.github.io/consul-rust/consul/"
-repository = "https://github.com/youngking/consul-rust"
-license = "MIT"
+repository = "https://github.com/stusmall/consul-rust"
+license = "MIT/Apache-2.0"
 
 readme = "README.md"
 keywords = ["consul", "discovery"]
@@ -16,5 +16,5 @@ exclude = [
 ]
 
 [dependencies]
-curl = "0.2.16"
-rustc-serialize = "0.3.16"
+curl = "0.2.19"
+rustc-serialize = "0.3.19"
