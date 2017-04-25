@@ -16,8 +16,8 @@ Rust client libray for [Consul](http://consul.io/) HTTP API
     use consul::Client;
 
     fn main(){
-        let client = Client::new("127.0.0.1:8500");
-        let services: HashMap<String, Vec<String>> = client.catalog.services();
+        let client = Client::new("http://127.0.0.1:8500");
+        let services: HashMap<String, Vec<String>> = client.catalog.services().unwrap();
         println!("{:?}", services);
     }
 ```
