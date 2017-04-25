@@ -1,96 +1,71 @@
 #![allow(non_snake_case)]
 
-use std::str::from_utf8;
+use serde_json;
 use std::thread;
 use std::time::Duration;
 
-use rustc_serialize::json;
-use curl::http;
+use request::Handler;
+use error::ConsulResult;
+use std::error::Error;
 
 pub const SESSION_TTL: &'static str = "15s";
 
-#[derive(RustcDecodable, RustcEncodable, Debug)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct SessionCreate {
     Name: String,
     TTL: String
 }
 
-#[derive(RustcDecodable, RustcEncodable, Debug)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct SessionID {
     ID: String
 }
 
 pub struct Session {
-    endpoint: String
+    handler: Handler
 }
 
 impl Session {
     pub fn new(address: &str) ->  Session {
         Session {
-            endpoint: format!("http://{}/v1/session", address)
+            handler: Handler::new(&format!("{}/v1/session", address))
         }
     }
-    
-    pub fn create(&self, name: String) -> Option<String> {
-        let url = format!("{}/create", self.endpoint);
+
+    pub fn create(&self, name: String) -> ConsulResult<Option<String>> {
         let session = SessionCreate {
             Name: name,
             TTL: self::SESSION_TTL.to_owned()
         };
-        let json_str = json::encode(&session).unwrap();
-        
-        let resp = http::handle()
-            .put(url, &json_str)
-            .content_type("application/json")
-            .exec().unwrap();
-        if resp.get_code() != 200 {
-            println!("Consul: Error creating a session! Response: {}", resp);
-            return None;
-        }
-        let result = from_utf8(resp.get_body()).unwrap();        
-        let json_data = match json::Json::from_str(result) {
-            Ok(value) => value,
-            Err(err) => panic!("consul: Could not convert to json: {:?}. Err: {}", result, err)
-        };
-        super::get_string(&json_data, &["ID"])
-    }
-    
-    pub fn renew(&self, session_id: &String) -> bool {
-        for _ in 0..10 {
-            let url = format!("{}/renew/{}", self.endpoint, session_id);
-            let resp = http::handle()
-                .put(url, "")
-                .content_type("application/json")
-                .exec().unwrap();
-            if resp.get_code() != 200 {
-                if resp.get_code() == 404 {
-                    println!("Could not renew session: {}, returned HTTP code: {:?}. Returning false.", session_id, resp.get_code());
-                    return false;
-                }
-                else {
-                    println!("Could not renew session: {}, returned HTTP code: {:?}. Sleeping for 2 seconds", session_id, resp.get_code());
-                    thread::sleep(Duration::from_millis(2000u64));
-                }
-            }
-            else {
-                return true;
-            }
-        }
-        panic!("Could not renew session: {} after 10 tries.", session_id);
-        false
+        let json_str = serde_json::to_string(&session)
+            .map_err(|e| e.description().to_owned())?;
+
+        let result = self.handler.put("create", json_str, Some("application/json"))?;
+
+        let json_data = serde_json::from_str(&result)
+            .map_err(|e| e.description().to_owned())?;
+        Ok(super::get_string(&json_data, &["ID"]))
     }
 
-    pub fn end(&self, session_id: &String) {
-        let url = format!("{}/destroy/{}", self.endpoint, session_id);
-        let resp = http::handle()
-            .put(url, "")
-            .content_type("application/json")
-            .exec().unwrap();
-        if resp.get_code() != 200 {
-            panic!("Cound not destroy session: {}", session_id);
+    pub fn renew(&self, session_id: &String) -> ConsulResult<bool> {
+        for _ in 0..10 {
+            let uri = format!("renew/{}", session_id);
+            match self.handler.put(&uri, "".to_owned(), Some("application/json")) {
+                Ok(_) => return Ok(true),
+                Err(e) => {
+                    println!("Could not renew session: {}, returned error: {}. Sleeping for 2 seconds", session_id, e);
+                    thread::sleep(Duration::from_millis(2000u64));
+                }
+            };
         }
-        
+        Err(format!("Could not renew session: {} after 10 tries.", session_id))
     }
-    
-    
+
+    pub fn end(&self, session_id: &String) -> ConsulResult<()> {
+        let uri = format!("destroy/{}", session_id);
+        self.handler.put(&uri, "".to_owned(), Some("application/json"))?;
+        Ok(())
+    }
+
+
 }
