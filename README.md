@@ -1,9 +1,6 @@
 ## consul-rust (Incomplete implement)
 
-[![Build Status](https://travis-ci.org/youngking/consul-rust.svg)](https://travis-ci.org/youngking/consul-rust)
-[![](https://img.shields.io/crates/v/consul.svg)](https://crates.io/crates/consul)
-
-[Documentation here](http://youngking.github.io/consul-rust/consul/).
+[Documentation here](https://github.com/stusmall/consul-rust/).
 
 Rust client libray for [Consul](http://consul.io/) HTTP API
 
@@ -23,7 +20,7 @@ Rust client libray for [Consul](http://consul.io/) HTTP API
 ```
 
 
-For more example, see the **[tests](https://github.com/youngking/consul-rust/blob/master/tests/example.rs)** .
+For more example, see the **[tests](https://github.com/stusmall/consul-rust/blob/master/tests/example.rs)** .
 
 ### Installation
 
