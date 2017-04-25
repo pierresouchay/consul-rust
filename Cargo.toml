@@ -1,11 +1,11 @@
 [package]
 
 name = "consul"
-version = "0.0.4"
-authors = ["YoungKing <yanckin@gmail.com>"]
+version = "0.1.0"
+authors = ["Andrew Useckas <andrew.useckas@threat-x.com>", "Stu Small <stuart.small@threat-x.com>", "YoungKing <yanckin@gmail.com>"]
 description = "Rust client libray for Consul HTTP API"
-documentation = "http://youngking.github.io/consul-rust/consul/"
-repository = "https://github.com/youngking/consul-rust"
+documentation = "https://github.com/stusmall/consul-rust"
+repository = "https://github.com/stusmall/consul-rust"
 license = "MIT"
 
 readme = "README.md"
@@ -16,5 +16,9 @@ exclude = [
 ]
 
 [dependencies]
-curl = "^0.2"
-rustc-serialize = "0.3.15"
+serde = "^1.0"
+serde_json = "^1.0"
+serde_derive = "^1.0"
+hyper = "^0.10"
+hyper-openssl = { git="https://github.com/sfackler/hyper-openssl" }
+openssl = "^0.9"
