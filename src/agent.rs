@@ -1,20 +1,21 @@
 #![allow(non_snake_case)]
 
-use std::str::from_utf8;
 use std::collections::HashMap;
+use request::Handler;
 
-use rustc_serialize::json;
-use curl::http;
+use serde_json;
+use error::ConsulResult;
+use std::error::Error;
 
 use super::{Service, RegisterService, TtlHealthCheck};
 
 /// Agent can be used to query the Agent endpoints
 pub struct Agent{
-    endpoint: String,
+    handler: Handler
 }
 
 /// AgentMember represents a cluster member known to the agent
-#[derive(RustcDecodable, RustcEncodable)]
+#[derive(Serialize, Deserialize)]
 pub struct AgentMember {
 	Name: String,
 	Addr: String,
@@ -31,73 +32,65 @@ pub struct AgentMember {
 
 
 impl Agent {
-
     pub fn new(address: &str) -> Agent {
-        Agent{endpoint: format!("{}/v1/agent", address)}
-    }
-
-    pub fn services(&self) -> HashMap<String, Service> {
-        let url = format!("{}/services", self.endpoint);
-        let resp = http::handle().get(url).exec().unwrap();
-        let result = from_utf8(resp.get_body()).unwrap();
-        json::decode(result).unwrap()
-    }
-
-    pub fn members(&self) -> Vec<AgentMember> {
-        let url = format!("{}/members", self.endpoint);
-        let resp = http::handle().get(url).exec().unwrap();
-        let result = from_utf8(resp.get_body()).unwrap();
-        json::decode(result).unwrap()
-    }
-
-    pub fn register(&self, service: RegisterService) {
-        let url = format!("{}/service/register", self.endpoint);
-        let json_str = json::encode(&service).unwrap();
-        let resp = http::handle()
-            .put(url, &json_str)
-            .content_type("application/json")
-            .exec().unwrap();
-        if resp.get_code() != 200 {
-            panic!("Consul: Error registering a service!");
+        Agent {
+            handler: Handler::new(&format!("{}/v1/agent", address))
         }
     }
-    
-    pub fn register_ttl_check(&self, health_check: TtlHealthCheck) {
-        let url = format!("{}/check/register", self.endpoint);
-        let json_str = json::encode(&health_check).unwrap();
-        let resp = http::handle()
-            .put(url, &json_str)
-            .content_type("application/json")
-            .exec().unwrap();
-        if resp.get_code() != 200 {
-            panic!("Consul: Error registering a health check!");
+
+    pub fn services(&self) -> ConsulResult<HashMap<String, Service>> {
+        let result = self.handler.get("services")?;
+        serde_json::from_str(&result)
+            .map_err(|e| e.description().to_owned())
+    }
+
+    pub fn members(&self) -> ConsulResult<Vec<AgentMember>> {
+        let result = self.handler.get("members")?;
+        serde_json::from_str(&result)
+            .map_err(|e| e.description().to_owned())
+    }
+
+    pub fn register(&self, service: RegisterService) -> ConsulResult<()> {
+        let json_str = serde_json::to_string(&service)
+            .map_err(|e| e.description().to_owned())?;
+
+        if let Err(e) = self.handler.put("service/register", json_str, Some("application/json")) {
+            Err(format!("Consul: Error registering a service. Err:{}", e))
+        }
+        else {
+            Ok(())
         }
     }
-    
-    pub fn check_pass(&self, service_id: String) {
-        let url = format!("{}/check/pass/{}", self.endpoint, service_id);
-        http::handle().get(url).exec().unwrap();
+
+    pub fn register_ttl_check(&self, health_check: TtlHealthCheck) -> ConsulResult<()> {
+        let json_str = serde_json::to_string(&health_check)
+            .map_err(|e| e.description().to_owned())?;
+
+        if let Err(e) = self.handler.put("check/register", json_str, Some("application/json")) {
+            Err(format!("Consul: Error registering a health check. Err:{}", e))
+        }
+        else {
+            Ok(())
+        }
     }
 
-    pub fn get_self_name(&self) -> Option<String> {
-        let url = format!("{}/self", self.endpoint);
-        let resp = http::handle().get(url).exec().unwrap();
-        let result = from_utf8(resp.get_body()).unwrap();
-        let json_data = match json::Json::from_str(result) {
-            Ok(value) => value,
-            Err(err) => panic!("consul: Could not convert to json: {:?}, Err: {}", result, err)
-        };
-        super::get_string(&json_data, &["Config", "NodeName"])
+    pub fn check_pass(&self, service_id: String) -> ConsulResult<()> {
+        let uri = format!("check/pass/{}", service_id);
+        self.handler.get(&uri)?;
+        Ok(())
     }
 
-    pub fn get_self_address(&self) -> Option<String> {
-        let url = format!("{}/self", self.endpoint);
-        let resp = http::handle().get(url).exec().unwrap();
-        let result = from_utf8(resp.get_body()).unwrap();
-        let json_data = match json::Json::from_str(result) {
-            Ok(value) => value,
-            Err(err) => panic!("consul: Could not convert to json: {:?}. Err: {}", result, err)
-        };
-        super::get_string(&json_data, &["Config", "AdvertiseAddr"])
+    pub fn get_self_name(&self) -> ConsulResult<Option<String>> {
+        let result = self.handler.get("self")?;
+        let json_data = serde_json::from_str(&result)
+            .map_err(|e| e.description().to_owned())?;
+        Ok(super::get_string(&json_data, &["Config", "NodeName"]))
+    }
+
+    pub fn get_self_address(&self) -> ConsulResult<Option<String>> {
+        let result = self.handler.get("self")?;
+        let json_data = serde_json::from_str(&result)
+            .map_err(|e| e.description().to_owned())?;
+        Ok(super::get_string(&json_data, &["Config", "AdvertiseAddr"]))
     }
 }

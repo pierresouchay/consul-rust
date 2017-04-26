@@ -1,38 +1,31 @@
-extern crate rustc_serialize;
 extern crate consul;
+extern crate serde;
+extern crate serde_json;
 
 use std::collections::HashMap;
 
-use rustc_serialize::json;
-
-
 #[test]
 pub fn test_agent() {
-    let client = consul::Client::new("127.0.0.1:8500");
-    // list services
-    let services: HashMap<String, consul::Service> = client.agent.services();
+    let client = consul::Client::new("http://127.0.0.1:8500");
+    let services: HashMap<String, consul::Service> = client.agent.services().unwrap();
     assert!(services.contains_key("consul"));
-    // list members
-    let members:  Vec<consul::AgentMember> = client.agent.members();
-    assert_eq!(members.len(), 1);
-    println!("{:?}", json::encode(&members));
-    // list
+    let members:  Vec<consul::AgentMember> = client.agent.members().unwrap();
+    assert!(!members.is_empty());
+    println!("Members: {}", serde_json::to_string(&members).unwrap())
 }
 
 #[test]
 pub fn test_catalog(){
-    let client = consul::Client::new("127.0.0.1:8500");
-    let map: HashMap<String, Vec<String>> = client.catalog.services();
-    assert!(map.contains_key("gsearch"));
+    let client = consul::Client::new("http://127.0.0.1:8500");
+    let map: HashMap<String, Vec<String>> = client.catalog.services().unwrap();
+    assert!(map.contains_key("consul"));
 }
 
 
 #[test]
 pub fn test_health(){
-    let client = consul::Client::new("127.0.0.1:8500");
-    let list1: Vec<consul::HealthService> = client.health.service("gsearch", Some("release"));
-    assert_eq!(list1.len(), 1);
-    let list2: Vec<consul::HealthService> = client.health.service("redis", None);
-    assert_eq!(list2.len(), 0);
-    println!("{:?}", json::encode(&list1));
+    let client = consul::Client::new("http://127.0.0.1:8500");
+    let list: Vec<consul::HealthService> = client.health.service("consul", None).unwrap();
+    assert!(!list.is_empty());
+    println!("Consul nodes: {}", serde_json::to_string(&list).unwrap());
 }
