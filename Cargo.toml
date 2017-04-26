@@ -20,5 +20,5 @@ serde = "1"
 serde_json = "1"
 serde_derive = "1"
 hyper = "0.10"
-hyper-openssl = { git="https://github.com/sfackler/hyper-openssl" }
+hyper-openssl = "0.2"
 openssl = "0.9"
