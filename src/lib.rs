@@ -21,8 +21,8 @@
 //! use std::collections::HashMap;
 //! use consul::{Client, Service};
 //!
-//! let client = Client::new("127.0.0.1:8500");
-//! let services: HashMap<String, Service> = client.agent.services();
+//! let client = Client::new("http://127.0.0.1:8500");
+//! let services: HashMap<String, Service> = client.agent.services().unwrap();
 //! println!("{:?}", services);
 //! ```
 //!
@@ -30,9 +30,13 @@
 #![crate_name = "consul"]
 #![crate_type = "lib"]
 
-#[doc(no_inline)]
-extern crate curl;
-extern crate rustc_serialize;
+#[macro_use]
+extern crate serde_derive;
+extern crate serde;
+extern crate serde_json;
+extern crate hyper;
+extern crate openssl;
+extern crate hyper_openssl;
 
 /// public api
 pub use agent::{Agent, AgentMember};
@@ -50,18 +54,32 @@ mod health;
 mod client;
 mod session;
 mod keystore;
+mod request;
+mod error;
 
-use rustc_serialize::json;
+use serde_json::Value;
+pub use error::ConsulResult;
 
 #[inline]
-pub fn get_string(json_data: &json::Json, path: &[&str]) -> Option<String> {
-    let value = match json_data.find_path(path) {
-        Some(value) => value,
-        None => return None
-    };
-    let s_value = match value.as_string() {
-        Some(value) => value,
-        None => return None
-    };
-    Some(s_value.to_owned())
+pub fn get_string(json_data: &Value, path: &[&str]) -> Option<String> {
+    let mut pointer_str = String::new();
+    for entry in path.iter() {
+        pointer_str = format!("{}/{}", pointer_str, entry);
+    }
+
+    json_data.pointer(&pointer_str)
+        .and_then(|value| {
+            value.as_str()
+                .and_then(|value| Some(value.to_owned()))
+        })
+}
+
+#[inline]
+pub fn find_path<'a>(json_data: &'a Value, path: &[&str]) -> Option<&'a Value> {
+    let mut pointer_str = String::new();
+    for entry in path.iter() {
+        pointer_str = format!("{}/{}", pointer_str, entry);
+    }
+
+    json_data.pointer(&pointer_str)
 }
