@@ -1,7 +1,7 @@
 [package]
 
 name = "consul"
-version = "0.1.0"
+version = "0.2.0"
 authors = ["Andrew Useckas <andrew.useckas@threat-x.com>", "Stu Small <stuart.small@threat-x.com>", "YoungKing <yanckin@gmail.com>"]
 description = "Rust client libray for Consul HTTP API"
 documentation = "https://docs.rs/consul/"
