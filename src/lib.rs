@@ -40,7 +40,7 @@ extern crate hyper_openssl;
 
 /// public api
 pub use agent::{Agent, AgentMember};
-pub use catalog::Catalog;
+pub use catalog::{Catalog, ServiceNode};
 pub use health::Health;
 pub use client::Client;
 pub use keystore::Keystore;
