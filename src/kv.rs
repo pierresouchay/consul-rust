@@ -14,20 +14,20 @@ pub struct KVPair {
     pub ModifyIndex: Option<u64>,
     pub LockIndex: Option<u64>,
     pub Flags: Option<u64>,
-    pub Value: Vec<u8>,
+    pub Value: String,
     pub Session: Option<String>,
 }
 
 pub trait KV {
     fn acquire(&self, &KVPair, Option<&WriteOptions>) -> Result<(bool, WriteMeta)>;
     //fn cas(&self, &WriteKVPair, Option<&WriteOptions>) -> Result<(bool, WriteMeta)>;
-    fn delete(&self, key: &str, Option<&WriteOptions>) -> Result<((), WriteMeta)>;
+    fn delete(&self, key: &str, Option<&WriteOptions>) -> Result<(bool, WriteMeta)>;
     //fn delete_cas(&self, &WriteKVPair, Option<&WriteOptions>) -> Result<(bool, WriteMeta)>;
     //fn delete_tree(&self, &str, Option<&WriteOptions>) -> Result<((), WriteMeta)>;
     fn get(&self, &str, Option<&QueryOptions>) -> Result<(Option<KVPair>, QueryMeta)>;
     //fn keys(&self, &str, &str, Option<&QueryOptions>) -> Result<(Vec<String>, QueryMeta)>;
     fn list(&self, &str, Option<&QueryOptions>) -> Result<(Vec<KVPair>, QueryMeta)>;
-    //fn put(&self, &KVPair, Option<&QueryMeta>) -> Result<(bool, WriteMeta)>;
+    fn put(&self, &KVPair, Option<&WriteOptions>) -> Result<(bool, WriteMeta)>;
     //fn release(&self, &WriteKVPair, Option<&WriteOptions>) -> Result<(bool, WriteMeta)>;
 }
 
@@ -48,7 +48,7 @@ impl KV for Client {
         }
     }
 
-    fn delete(&self, key: &str, options: Option<&WriteOptions>) -> Result<((), WriteMeta)> {
+    fn delete(&self, key: &str, options: Option<&WriteOptions>) -> Result<(bool, WriteMeta)> {
         let path = format!("/v1/kv/{}", key);
         delete(&path, &self.config, HashMap::new(), options)
     }
@@ -67,5 +67,16 @@ impl KV for Client {
         params.insert(String::from("recurse"), String::from(""));
         let path = format!("/v1/kv/{}/", prefix);
         get_vec(&path, &self.config, params, o)
+    }
+
+    fn put(&self, pair: &KVPair, o: Option<&WriteOptions>) -> Result<(bool, WriteMeta)> {
+        let mut params = HashMap::new();
+        if let Some(i) = pair.Flags {
+            if i != 0 {
+                params.insert(String::from("flags"), i.to_string());
+            }
+        }
+        let path = format!("/v1/kv/{}", pair.Key);
+        put(&path, Some(&pair.Value), &self.config, params, o)
     }
 }

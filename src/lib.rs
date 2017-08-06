@@ -1,5 +1,5 @@
 #![allow(non_snake_case)]
-
+#![allow(unused_doc_comment)]
 
 
 #[macro_use]

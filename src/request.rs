@@ -47,9 +47,9 @@ pub fn get_vec<R: DeserializeOwned>(
     response
         .chain_err(|| "HTTP request to consul failed")
         .and_then(|mut r| {
-            let j = if *r.status() != StatusCode::NotFound{ 
+            let j = if *r.status() != StatusCode::NotFound {
                 r.json().chain_err(|| "Failed to parse JSON response")?
-            }else{
+            } else {
                 Vec::new()
             };
             let x: Option<Result<u64>> = r.headers()
