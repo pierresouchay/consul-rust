@@ -1,96 +1,126 @@
-#![allow(non_snake_case)]
-
 use std::collections::HashMap;
-use request::Handler;
 
-use serde_json;
-use error::ConsulResult;
-use std::error::Error;
+use request::{get, put};
 
-use super::{Service, RegisterService, TtlHealthCheck};
+use Client;
+use errors::Result;
 
-/// Agent can be used to query the Agent endpoints
-pub struct Agent{
-    handler: Handler
+
+#[derive(Clone, Eq, PartialEq, Serialize, Deserialize, Debug)]
+pub struct AgentCheck {
+    pub Node: String,
+    pub CheckID: String,
+    pub Name: String,
+    pub Status: String,
+    pub Notes: String,
+    pub Output: String,
+    pub ServiceID: String,
+    pub ServiceName: String,
 }
 
-/// AgentMember represents a cluster member known to the agent
-#[derive(Serialize, Deserialize)]
+#[derive(Clone, Eq, PartialEq, Serialize, Deserialize, Debug)]
 pub struct AgentMember {
-	Name: String,
-	Addr: String,
-	Port: u16,
-	Tags: HashMap<String, String>,
-	Status: usize,
-	ProtocolMin: u8,
-	ProtocolMax: u8,
-	ProtocolCur: u8,
-	DelegateMin: u8,
-	DelegateMax: u8,
-	DelegateCur: u8
+    pub Name: String,
+    pub Addr: String,
+    pub Port: u16,
+    pub Tags: HashMap<String, String>,
+    pub pubStatus: usize,
+    pub ProtocolMin: u8,
+    pub ProtocolMax: u8,
+    pub ProtocolCur: u8,
+    pub DelegateMin: u8,
+    pub DelegateMax: u8,
+    pub DelegateCur: u8,
+}
+
+//I haven't implemetned https://www.consul.io/api/agent.html#read-configuration
+//I haven't implemetned https://www.consul.io/api/agent.html#stream-logs
+pub trait Agent {
+    fn checks(&self) -> Result<HashMap<String, AgentCheck>>;
+    fn members(&self, wan: bool) -> Result<AgentMember>;
+    fn reload(&self) -> Result<()>;
+    fn maintenance_mode(&self, enable: bool, reason: Option<&str>) -> Result<()>;
+    fn join(&self, address: &str, wan: bool) -> Result<()>;
+    fn leave(&self) -> Result<()>;
+    fn force_leave(&self) -> Result<()>;
 }
 
 
-impl Agent {
-    pub fn new(address: &str) -> Agent {
-        Agent {
-            handler: Handler::new(&format!("{}/v1/agent", address))
+impl Agent for Client {
+    /// https://www.consul.io/api/agent/check.html#list-checks
+    fn checks(&self) -> Result<HashMap<String, AgentCheck>> {
+        get("/v1/agent/checks", &self.config, HashMap::new(), None).map(|x| x.0)
+    }
+    /// https://www.consul.io/api/agent.html#list-members
+    fn members(&self, wan: bool) -> Result<AgentMember> {
+        let mut params = HashMap::new();
+        if wan {
+            params.insert(String::from("wan"), String::from("1"));
         }
+        get("/v1/agent/members", &self.config, params, None).map(|x| x.0)
+    }
+    /// https://www.consul.io/api/agent.html#reload-agent
+    fn reload(&self) -> Result<()> {
+        put(
+            "/v1/agent/reload",
+            None as Option<&()>,
+            &self.config,
+            HashMap::new(),
+            None,
+        ).map(|x| x.0)
     }
 
-    pub fn services(&self) -> ConsulResult<HashMap<String, Service>> {
-        let result = self.handler.get("services")?;
-        serde_json::from_str(&result)
-            .map_err(|e| e.description().to_owned())
-    }
-
-    pub fn members(&self) -> ConsulResult<Vec<AgentMember>> {
-        let result = self.handler.get("members")?;
-        serde_json::from_str(&result)
-            .map_err(|e| e.description().to_owned())
-    }
-
-    pub fn register(&self, service: RegisterService) -> ConsulResult<()> {
-        let json_str = serde_json::to_string(&service)
-            .map_err(|e| e.description().to_owned())?;
-
-        if let Err(e) = self.handler.put("service/register", json_str, Some("application/json")) {
-            Err(format!("Consul: Error registering a service. Err:{}", e))
+    /// https://www.consul.io/api/agent.html#reload-agent
+    fn maintenance_mode(&self, enable: bool, reason: Option<&str>) -> Result<()> {
+        let mut params = HashMap::new();
+        let enable_str = if enable {
+            String::from("true")
+        } else {
+            String::from("false")
+        };
+        params.insert(String::from("enabled"), enable_str);
+        if let Some(r) = reason {
+            params.insert(String::from("reason"), r.to_owned());
         }
-        else {
-            Ok(())
+        put(
+            "/v1/agent/maintenance",
+            None as Option<&()>,
+            &self.config,
+            params,
+            None,
+        ).map(|x| x.0)
+
+    }
+    ///https://www.consul.io/api/agent.html#join-agent
+    fn join(&self, address: &str, wan: bool) -> Result<()> {
+        let mut params = HashMap::new();
+
+        if wan {
+            params.insert(String::from("wan"), String::from("true"));
         }
+        let path = format!("/v1/agent/join/{}", address);
+        put(&path, None as Option<&()>, &self.config, params, None).map(|x| x.0)
     }
 
-    pub fn register_ttl_check(&self, health_check: TtlHealthCheck) -> ConsulResult<()> {
-        let json_str = serde_json::to_string(&health_check)
-            .map_err(|e| e.description().to_owned())?;
-
-        if let Err(e) = self.handler.put("check/register", json_str, Some("application/json")) {
-            Err(format!("Consul: Error registering a health check. Err:{}", e))
-        }
-        else {
-            Ok(())
-        }
+    /// https://www.consul.io/api/agent.html#graceful-leave-and-shutdown
+    fn leave(&self) -> Result<()> {
+        put(
+            "/v1/agent/leave",
+            None as Option<&()>,
+            &self.config,
+            HashMap::new(),
+            None,
+        ).map(|x| x.0)
     }
 
-    pub fn check_pass(&self, service_id: String) -> ConsulResult<()> {
-        let uri = format!("check/pass/{}", service_id);
-        self.handler.get(&uri)?;
-        Ok(())
-    }
-
-    pub fn get_self_name(&self) -> ConsulResult<Option<String>> {
-        let result = self.handler.get("self")?;
-        let json_data = serde_json::from_str(&result)
-            .map_err(|e| e.description().to_owned())?;
-        Ok(super::get_string(&json_data, &["Config", "NodeName"]))
-    }
-
-    pub fn get_self_address(&self) -> ConsulResult<Option<String>> {
-        let result = self.handler.get("self")?;
-        let json_data = serde_json::from_str(&result)
-            .map_err(|e| e.description().to_owned())?;
-        Ok(super::get_string(&json_data, &["Config", "AdvertiseAddr"]))
+    ///https://www.consul.io/api/agent.html#force-leave-and-shutdown
+    fn force_leave(&self) -> Result<()> {
+        put(
+            "/v1/agent/force-leave",
+            None as Option<&()>,
+            &self.config,
+            HashMap::new(),
+            None,
+        ).map(|x| x.0)
     }
 }

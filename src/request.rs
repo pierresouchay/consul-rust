@@ -1,165 +1,211 @@
-use hyper::{Client, status};
-use hyper::net::HttpsConnector;
-use hyper::header::{Headers, ContentType};
-use hyper::mime::Mime;
-use hyper_openssl::OpensslClient;
-use std::io::Read;
-use openssl::ssl::*;
-use error::ConsulResult;
+use url::Url;
+use std::collections::HashMap;
 
-#[derive(Debug)]
-pub struct Handler {
-    client: Client,
-    url: String
+use std::str;
+use std::str::FromStr;
+use std::time::Instant;
+
+
+use reqwest::Client as HttpClient;
+use reqwest::RequestBuilder;
+use reqwest::StatusCode;
+use serde::Serialize;
+use serde::de::DeserializeOwned;
+
+
+use {Config, QueryOptions, QueryMeta, WriteOptions, WriteMeta};
+use errors::Result;
+
+use errors::ResultExt;
+
+pub fn get_vec<R: DeserializeOwned>(
+    path: &str,
+    config: &Config,
+    mut params: HashMap<String, String>,
+    options: Option<&QueryOptions>,
+) -> Result<(Vec<R>, QueryMeta)> {
+    let datacenter: Option<&String> = options.and_then(|o| o.datacenter.as_ref()).or_else(|| {
+        config.datacenter.as_ref()
+    });
+
+    if let Some(dc) = datacenter {
+        params.insert(String::from("dc"), dc.to_owned());
+    }
+    if let Some(options) = options {
+        if let Some(index) = options.wait_index {
+            params.insert(String::from("index"), index.to_string());
+        }
+    }
+
+
+    let url_str = format!("{}{}", config.address, path);
+    let url = Url::parse_with_params(&url_str, params.iter()).chain_err(
+        || "Failed to parse URL",
+    )?;
+    let start = Instant::now();
+    let response = config.http_client.get(url).send();
+    response
+        .chain_err(|| "HTTP request to consul failed")
+        .and_then(|mut r| {
+            let j = if *r.status() != StatusCode::NotFound{ 
+                r.json().chain_err(|| "Failed to parse JSON response")?
+            }else{
+                Vec::new()
+            };
+            let x: Option<Result<u64>> = r.headers()
+                .get_raw("X-Consul-Index")
+                .and_then(|bytes| bytes.first())
+                .map(|bytes| {
+                    str::from_utf8(bytes)
+                        .chain_err(|| "Failed to parse valid UT8 for last index")
+                        .and_then(|s| {
+                            u64::from_str(s).chain_err(
+                                || "Failed to parse valid number for last index",
+                            )
+                        })
+                });
+
+            match x {
+                Some(r) => Ok((j, Some(r?))),
+                None => Ok((j, None)),
+            }
+        })
+        .map(|x: (Vec<R>, Option<u64>)| {
+            (
+                x.0,
+                QueryMeta {
+                    last_index: 0,
+                    request_time: Instant::now() - start,
+                },
+            )
+        })
 }
 
-impl Handler {
-    pub fn new(url: &str) -> Handler {
-        let client;
-        if url.trim().starts_with("https") {
-            let mut ssl_connector_builder = SslConnectorBuilder::new(SslMethod::tls()).unwrap();
-            {
-                let mut ssl_context_builder = ssl_connector_builder.builder_mut();
-                ssl_context_builder.set_verify(SSL_VERIFY_NONE);
-            }
-            let ssl_connector = ssl_connector_builder.build();
-            let mut ssl = OpensslClient::from(ssl_connector);
-            ssl.danger_disable_hostname_verification(true);
-            let connector = HttpsConnector::new(ssl);
-            client = Client::with_connector(connector);
-        }
-        else {
-            client = Client::new();
-        }
+pub fn get<R: DeserializeOwned>(
+    path: &str,
+    config: &Config,
+    mut params: HashMap<String, String>,
+    options: Option<&QueryOptions>,
+) -> Result<(R, QueryMeta)> {
+    let datacenter: Option<&String> = options.and_then(|o| o.datacenter.as_ref()).or_else(|| {
+        config.datacenter.as_ref()
+    });
 
-        Handler {
-            client: client,
-            url: url.to_owned()
-        }
+    if let Some(dc) = datacenter {
+        params.insert(String::from("dc"), dc.to_owned());
     }
-
-    pub fn get(&self, endpoint: &str) -> ConsulResult<String> {
-        let full_url = format!("{}/{}", self.url.trim_right_matches('/'), endpoint);
-        let mut res = self.client.get(&full_url)
-            .send()
-            .map_err(|e| format!("{}", e))?;
-
-        if res.status == status::StatusCode::Ok {
-            let mut response = String::new();
-            res.read_to_string(&mut response)
-                .map_err(|e| format!("{}", e))?;
-            Ok(response)
-        }
-        else {
-            let mut response = String::new();
-            res.read_to_string(&mut response)
-                .map_err(|e| format!("{}", e))?;
-
-            if !response.is_empty() {
-                Ok(response)
-            }
-            else {
-                Err(format!("Request failed with status: {:?}", res.status_raw()))
-            }
-        }
-    }
-
-    pub fn _post(&self, endpoint: &str, req: String) -> ConsulResult<String> {
-        let full_url = format!("{}/{}", self.url.trim_right_matches('/'), endpoint);
-
-        let mut res = self.client.post(&full_url)
-            .body(&req)
-            .send()
-            .map_err(|e| format!("{}", e))?;
-
-        if res.status == status::StatusCode::Ok {
-            let mut response = String::new();
-            res.read_to_string(&mut response)
-                .map_err(|e| format!("{}", e))?;
-            Ok(response)
-        }
-        else {
-            let mut response = String::new();
-            res.read_to_string(&mut response)
-                .map_err(|e| format!("{}", e))?;
-
-            if !response.is_empty() {
-                Ok(response)
-            }
-            else {
-                Err(format!("Request failed with status: {:?}", res.status_raw()))
-            }
-        }
-    }
-
-    pub fn put(&self, endpoint: &str, req: String, content_type: Option<&str>) -> ConsulResult<String> {
-        let full_url = format!("{}/{}", self.url.trim_right_matches('/'), endpoint);
-
-        let mut res;
-        if let Some(content) = content_type {
-            let mime: Mime = content.parse().unwrap();
-            let mut headers = Headers::new();
-            headers.set(ContentType(mime));
-            res = self.client.post(&full_url)
-                .headers(headers)
-                .body(&req)
-                .send()
-                .map_err(|e| format!("{}", e))?;
-
-        }
-        else {
-            res = self.client.post(&full_url)
-                .body(&req)
-                .send()
-                .map_err(|e| format!("{}", e))?;
-        }
-
-        if res.status == status::StatusCode::Ok {
-            let mut response = String::new();
-            res.read_to_string(&mut response)
-                .map_err(|e| format!("{}", e))?;
-            Ok(response)
-        }
-        else {
-            let mut response = String::new();
-            res.read_to_string(&mut response)
-                .map_err(|e| format!("{}", e))?;
-
-            if !response.is_empty() {
-                Ok(response)
-            }
-            else {
-                Err(format!("Request failed with status: {:?}", res.status_raw()))
-            }
-        }
-
-    }
-
-    pub fn delete(&self, endpoint: &str) -> ConsulResult<String> {
-        let full_url = format!("{}/{}", self.url.trim_right_matches('/'), endpoint);
-        let mut res = self.client.delete(&full_url)
-            .send()
-            .map_err(|e| format!("{}", e))?;
-
-        if res.status == status::StatusCode::Ok {
-            let mut response = String::new();
-            res.read_to_string(&mut response)
-                .map_err(|e| format!("{}", e))?;
-            Ok(response)
-        }
-        else {
-            let mut response = String::new();
-            res.read_to_string(&mut response)
-                .map_err(|e| format!("{}", e))?;
-
-            if !response.is_empty() {
-                Ok(response)
-            }
-            else {
-                Err(format!("Request failed with status: {:?}", res.status_raw()))
-            }
+    if let Some(options) = options {
+        if let Some(index) = options.wait_index {
+            params.insert(String::from("index"), index.to_string());
         }
     }
 
 
+    let url_str = format!("{}{}", config.address, path);
+    let url = Url::parse_with_params(&url_str, params.iter()).chain_err(
+        || "Failed to parse URL",
+    )?;
+    let start = Instant::now();
+    let response = config.http_client.get(url).send();
+    response
+        .chain_err(|| "HTTP request to consul failed")
+        .and_then(|mut r| {
+            let j = r.json().chain_err(|| "Failed to parse JSON response")?;
+            let x: Option<Result<u64>> = r.headers()
+                .get_raw("X-Consul-Index")
+                .and_then(|bytes| bytes.first())
+                .map(|bytes| {
+                    str::from_utf8(bytes)
+                        .chain_err(|| "Failed to parse valid UT8 for last index")
+                        .and_then(|s| {
+                            u64::from_str(s).chain_err(
+                                || "Failed to parse valid number for last index",
+                            )
+                        })
+                });
+
+            match x {
+                Some(r) => Ok((j, Some(r?))),
+                None => Ok((j, None)),
+            }
+        })
+        .map(|x: (R, Option<u64>)| {
+            (
+                x.0,
+                QueryMeta {
+                    last_index: 0,
+                    request_time: Instant::now() - start,
+                },
+            )
+        })
+}
+
+pub fn delete<R: DeserializeOwned>(
+    path: &str,
+    config: &Config,
+    params: HashMap<String, String>,
+    options: Option<&WriteOptions>,
+) -> Result<(R, WriteMeta)> {
+    let req = |http_client: &HttpClient, url: Url| -> RequestBuilder { http_client.delete(url) };
+    write_with_body(path, None as Option<&()>, config, params, options, req)
+}
+
+/*
+pub fn post<T: Serialize, R: DeserializeOwned>(path: &str,
+                                               body: Option<&T>,
+                                               config: &Config,
+                                               options: Option<&WriteOptions>)
+                                               -> Result<(R, WriteMeta)> {
+    let req = |http_client: &HttpClient, url: Url| -> RequestBuilder { http_client.post(url) };
+    write_with_body(path, body, config, options, req)
+}
+*/
+pub fn put<T: Serialize, R: DeserializeOwned>(
+    path: &str,
+    body: Option<&T>,
+    config: &Config,
+    params: HashMap<String, String>,
+    options: Option<&WriteOptions>,
+) -> Result<(R, WriteMeta)> {
+    let req = |http_client: &HttpClient, url: Url| -> RequestBuilder { http_client.put(url) };
+    write_with_body(path, body, config, params, options, req)
+}
+
+
+fn write_with_body<T: Serialize, R: DeserializeOwned, F>(
+    path: &str,
+    body: Option<&T>,
+    config: &Config,
+    mut params: HashMap<String, String>,
+    options: Option<&WriteOptions>,
+    req: F,
+) -> Result<(R, WriteMeta)>
+where
+    F: Fn(&HttpClient, Url) -> RequestBuilder,
+{
+    let start = Instant::now();
+    let datacenter: Option<&String> = options.and_then(|o| o.datacenter.as_ref()).or_else(|| {
+        config.datacenter.as_ref()
+    });
+
+    if let Some(dc) = datacenter {
+        params.insert(String::from("dc"), dc.to_owned());
+    }
+
+
+    let url_str = format!("{}{}", config.address, path);
+    let url = Url::parse_with_params(&url_str, params.iter()).chain_err(
+        || "Failed to parse URL",
+    )?;
+    let builder = req(&config.http_client, url);
+    let builder = if let Some(b) = body {
+        builder.json(b)
+    } else {
+        builder
+    };
+    builder
+        .send()
+        .chain_err(|| "HTTP request to consul failed")
+        .and_then(|mut x| x.json().chain_err(|| "Failed to parse JSON"))
+        .map(|x| (x, WriteMeta { request_time: Instant::now() - start }))
 }
