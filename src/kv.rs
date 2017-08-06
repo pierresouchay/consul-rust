@@ -65,7 +65,7 @@ impl KV for Client {
     fn list(&self, prefix: &str, o: Option<&QueryOptions>) -> Result<(Vec<KVPair>, QueryMeta)> {
         let mut params = HashMap::new();
         params.insert(String::from("recurse"), String::from(""));
-        let path = format!("/v1/kv/{}/", prefix);
+        let path = format!("/v1/kv/{}", prefix);
         get_vec(&path, &self.config, params, o)
     }
 

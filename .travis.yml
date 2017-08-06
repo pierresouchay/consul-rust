@@ -10,5 +10,4 @@ before_install:
   - ./consul agent -config-file data/consul-test.json > /tmp/consul.log &
 script:
   - cargo build
-  - sh data/register.sh
-  - cargo test -v
+  - RUST_TEST_TASKS=1 cargo test
