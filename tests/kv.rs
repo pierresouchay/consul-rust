@@ -11,7 +11,7 @@ fn kv_test() {
     let r = client.list("", None).unwrap();
     assert!(r.0.is_empty());
 
-    let pair = KVPair{
+    let pair = KVPair {
         Key: String::from("testkey"),
         Value: String::from("testvalue"),
         ..Default::default()
@@ -19,12 +19,11 @@ fn kv_test() {
 
     assert!(client.put(&pair, None).unwrap().0);
 
-    let r = client.list("", None).unwrap();
+    let r = client.list("t", None).unwrap();
     assert!(!r.0.is_empty());
 
     client.delete("testkey", None).unwrap();
 
     let r = client.list("", None).unwrap();
     assert!(r.0.is_empty());
-
 }
