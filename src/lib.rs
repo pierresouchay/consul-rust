@@ -72,7 +72,7 @@ pub struct QueryOptions {
 
 #[derive(Clone, Debug)]
 pub struct QueryMeta {
-    pub last_index: u64,
+    pub last_index: Option<u64>,
     pub request_time: Duration,
 }
 

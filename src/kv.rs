@@ -40,7 +40,7 @@ impl KV for Client {
             }
         }
         if let Some(ref session) = pair.Session {
-            params.insert(String::from("aquire"), session.to_owned());
+            params.insert(String::from("acquire"), session.to_owned());
             let path = format!("/v1/kv/{}", pair.Key);
             put(&path, Some(&pair.Value), &self.config, params, o)
         } else {

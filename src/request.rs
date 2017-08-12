@@ -35,6 +35,9 @@ pub fn get_vec<R: DeserializeOwned>(
         if let Some(index) = options.wait_index {
             params.insert(String::from("index"), index.to_string());
         }
+        if let Some(wait_time) = options.wait_time {
+            params.insert(String::from("wait"), format!("{}s", wait_time.as_secs()));
+        }
     }
 
 
@@ -74,7 +77,7 @@ pub fn get_vec<R: DeserializeOwned>(
             (
                 x.0,
                 QueryMeta {
-                    last_index: 0,
+                    last_index: x.1,
                     request_time: Instant::now() - start,
                 },
             )
@@ -97,6 +100,9 @@ pub fn get<R: DeserializeOwned>(
     if let Some(options) = options {
         if let Some(index) = options.wait_index {
             params.insert(String::from("index"), index.to_string());
+        }
+        if let Some(wait_time) = options.wait_time {
+            params.insert(String::from("wait"), format!("{}s", wait_time.as_secs()));
         }
     }
 
@@ -133,7 +139,7 @@ pub fn get<R: DeserializeOwned>(
             (
                 x.0,
                 QueryMeta {
-                    last_index: 0,
+                    last_index: x.1,
                     request_time: Instant::now() - start,
                 },
             )
