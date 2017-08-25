@@ -100,7 +100,7 @@ impl Handler {
             let mime: Mime = content.parse().unwrap();
             let mut headers = Headers::new();
             headers.set(ContentType(mime));
-            res = self.client.post(&full_url)
+            res = self.client.put(&full_url)
                 .headers(headers)
                 .body(&req)
                 .send()
@@ -108,7 +108,7 @@ impl Handler {
 
         }
         else {
-            res = self.client.post(&full_url)
+            res = self.client.put(&full_url)
                 .body(&req)
                 .send()
                 .map_err(|e| format!("{}", e))?;
