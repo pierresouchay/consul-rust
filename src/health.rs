@@ -54,7 +54,7 @@ pub trait Health {
         tag: Option<&str>,
         passing_only: bool,
         options: Option<&QueryOptions>,
-    ) -> Result<(ServiceEntry, QueryMeta)>;
+    ) -> Result<(Vec<ServiceEntry>, QueryMeta)>;
 }
 
 impl Health for Client {
@@ -64,7 +64,7 @@ impl Health for Client {
         tag: Option<&str>,
         passing_only: bool,
         options: Option<&QueryOptions>,
-    ) -> Result<(ServiceEntry, QueryMeta)> {
+    ) -> Result<(Vec<ServiceEntry>, QueryMeta)> {
         let mut params = HashMap::new();
         let path = format!("/v1/health/service/{}", service);
         if passing_only {
