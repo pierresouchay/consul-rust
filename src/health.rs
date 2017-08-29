@@ -25,7 +25,7 @@ pub struct HealthCheck {
     pub Output: String,
     pub ServiceID: String,
     pub ServiceName: String,
-    pub ServiceTags: Vec<String>,
+    pub ServiceTags: Option<Vec<String>>,
 }
 
 #[derive(Eq, PartialEq, Serialize, Deserialize, Debug)]
@@ -33,7 +33,7 @@ pub struct Node {
     pub ID: String,
     pub Node: String,
     pub Address: String,
-    pub Datacenter: String,
+    pub Datacenter: Option<String>,
     pub TaggedAddresses: HashMap<String, String>,
     pub Meta: HashMap<String, String>,
     pub CreateIndex: u64,
