@@ -20,7 +20,7 @@ pub struct SessionEntry {
     pub LockDelay: Option<u64>, //TODO: Change this to a Durations
     pub Behavior: Option<String>,
     pub Checks: Option<Vec<String>>,
-    pub TTL: Option<String>
+    pub TTL: Option<String>,
 }
 
 pub trait Session {

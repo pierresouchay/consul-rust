@@ -1,48 +1,39 @@
 use std::collections::HashMap;
 
-use serde_json;
-use request::Handler;
-use error::ConsulResult;
-use std::error::Error;
+use {Client, QueryOptions, QueryMeta, WriteOptions, WriteMeta};
 
-/// Catalog can be used to query the Catalog endpoints
-pub struct Catalog{
-    handler: Handler
-}
+use errors::Result;
+use request::get;
 
-#[derive(Serialize, Deserialize, Debug)]
-#[allow(non_snake_case)]
-pub struct ServiceNode {
-    pub Address: String,
+pub struct CatalogDeregistration {
     pub Node: String,
-    pub ServiceAddress: String,
-    pub ServiceID: String,
-    pub ServiceName: String,
-    pub ServicePort: u16,
-    pub ServiceTags: Vec<String>,
+    pub Datacenter: Option<String>,
+    pub CheckID: Option<String>,
+    pub ServiceID: Option<String>,
 }
 
 
-impl Catalog {
 
-    pub fn new(address: &str) -> Catalog {
-        Catalog {
-            handler: Handler::new(&format!("{}/v1/catalog", address))
-        }
+pub trait Catalog {
+    fn datacenters(&self) -> Result<(Vec<String>, QueryMeta)>;
+    fn deregister(&self, &CatalogDeregistration, &WriteOptions) -> Result<((), WriteMeta)>;
+}
+
+impl Catalog for Client {
+    fn datacenters(&self) -> Result<(Vec<String>, QueryMeta)> {
+        get(
+            "/v1/catalog/datacenters",
+            &self.config,
+            HashMap::new(),
+            None,
+        )
     }
 
-    pub fn services(&self) -> ConsulResult<HashMap<String, Vec<String>>> {
-        let result = self.handler.get("services")?;
-        serde_json::from_str(&result)
-            .map_err(|e| e.description().to_owned())
+    fn deregister(
+        &self,
+        dereg: &CatalogDeregistration,
+        q: &WriteOptions,
+    ) -> Result<((), WriteMeta)> {
+        unimplemented!();
     }
-
-    pub fn get_nodes(&self, service: String) -> ConsulResult<Vec<ServiceNode>>{
-        let uri = format!("service/{}", service);
-        let result = self.handler.get(&uri)?;
-        let nodelist: Vec<ServiceNode> = serde_json::from_str(&result).map_err(|e| format!("Error parsing consul response: {:?}\nBody:{:?}", e, &result))?;
-        Ok(nodelist)
-    }
-
-
 }

@@ -1,20 +1,11 @@
 use std::collections::HashMap;
 
+use agent::AgentService;
 use {Client, QueryOptions, QueryMeta};
 use errors::Result;
 use request::get;
 
-#[derive(Eq, PartialEq, Serialize, Deserialize, Debug)]
-pub struct AgentService {
-    pub ID: String,
-    pub Service: String,
-    pub Tags: Vec<String>,
-    pub Port: u16,
-    pub Address: String,
-    pub EnableTagOverride: bool,
-    pub CreateIndex: u64,
-    pub ModifyIndex: u64,
-}
+
 #[derive(Eq, PartialEq, Serialize, Deserialize, Debug)]
 pub struct HealthCheck {
     pub Node: String,
@@ -34,8 +25,8 @@ pub struct Node {
     pub Node: String,
     pub Address: String,
     pub Datacenter: Option<String>,
-    pub TaggedAddresses: HashMap<String, String>,
-    pub Meta: HashMap<String, String>,
+    pub TaggedAddresses: Option<HashMap<String, String>>,
+    pub Meta: Option<HashMap<String, String>>,
     pub CreateIndex: u64,
     pub ModifyIndex: u64,
 }

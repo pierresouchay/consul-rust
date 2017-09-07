@@ -33,6 +33,18 @@ pub struct AgentMember {
     pub DelegateCur: u8,
 }
 
+#[derive(Eq, PartialEq, Serialize, Deserialize, Debug)]
+pub struct AgentService {
+    pub ID: String,
+    pub Service: String,
+    pub Tags: Option<Vec<String>>,
+    pub Port: u16,
+    pub Address: String,
+    pub EnableTagOverride: bool,
+    pub CreateIndex: u64,
+    pub ModifyIndex: u64,
+}
+
 //I haven't implemetned https://www.consul.io/api/agent.html#read-configuration
 //I haven't implemetned https://www.consul.io/api/agent.html#stream-logs
 pub trait Agent {

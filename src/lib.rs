@@ -11,6 +11,7 @@ extern crate serde;
 extern crate url;
 
 pub mod agent;
+pub mod catalog;
 pub mod errors;
 pub mod health;
 pub mod kv;
