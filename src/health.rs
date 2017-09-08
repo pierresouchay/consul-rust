@@ -16,7 +16,7 @@ pub struct HealthCheck {
     pub Output: String,
     pub ServiceID: String,
     pub ServiceName: String,
-    pub ServiceTags: Vec<String>,
+    pub ServiceTags: Option<Vec<String>>,
 }
 
 #[serde(default)]
@@ -26,8 +26,8 @@ pub struct Node {
     pub Node: String,
     pub Address: String,
     pub Datacenter: Option<String>,
-    pub TaggedAddresses: HashMap<String, String>,
-    pub Meta: HashMap<String, String>,
+    pub TaggedAddresses: Option<HashMap<String, String>>,
+    pub Meta: Option<HashMap<String, String>>,
     pub CreateIndex: u64,
     pub ModifyIndex: u64,
 }
