@@ -5,8 +5,8 @@ use request::{get, put};
 use Client;
 use errors::Result;
 
-
-#[derive(Clone, Eq, PartialEq, Serialize, Deserialize, Debug)]
+#[serde(default)]
+#[derive(Clone, Default, Eq, PartialEq, Serialize, Deserialize, Debug)]
 pub struct AgentCheck {
     pub Node: String,
     pub CheckID: String,
@@ -18,7 +18,8 @@ pub struct AgentCheck {
     pub ServiceName: String,
 }
 
-#[derive(Clone, Eq, PartialEq, Serialize, Deserialize, Debug)]
+#[serde(default)]
+#[derive(Clone, Default, Eq, PartialEq, Serialize, Deserialize, Debug)]
 pub struct AgentMember {
     pub Name: String,
     pub Addr: String,
@@ -33,7 +34,8 @@ pub struct AgentMember {
     pub DelegateCur: u8,
 }
 
-#[derive(Eq, PartialEq, Serialize, Deserialize, Debug)]
+#[serde(default)]
+#[derive(Eq, Default, PartialEq, Serialize, Deserialize, Debug)]
 pub struct AgentService {
     pub ID: String,
     pub Service: String,

@@ -5,8 +5,8 @@ use {Client, QueryOptions, QueryMeta};
 use errors::Result;
 use request::get;
 
-
-#[derive(Eq, PartialEq, Serialize, Deserialize, Debug)]
+#[serde(default)]
+#[derive(Eq, Default, PartialEq, Serialize, Deserialize, Debug)]
 pub struct HealthCheck {
     pub Node: String,
     pub CheckID: String,
@@ -16,22 +16,24 @@ pub struct HealthCheck {
     pub Output: String,
     pub ServiceID: String,
     pub ServiceName: String,
-    pub ServiceTags: Option<Vec<String>>,
+    pub ServiceTags: Vec<String>,
 }
 
-#[derive(Eq, PartialEq, Serialize, Deserialize, Debug)]
+#[serde(default)]
+#[derive(Eq, Default, PartialEq, Serialize, Deserialize, Debug)]
 pub struct Node {
     pub ID: String,
     pub Node: String,
     pub Address: String,
     pub Datacenter: Option<String>,
-    pub TaggedAddresses: Option<HashMap<String, String>>,
-    pub Meta: Option<HashMap<String, String>>,
+    pub TaggedAddresses: HashMap<String, String>,
+    pub Meta: HashMap<String, String>,
     pub CreateIndex: u64,
     pub ModifyIndex: u64,
 }
 
-#[derive(Eq, PartialEq, Serialize, Deserialize, Debug)]
+#[serde(default)]
+#[derive(Eq, Default, PartialEq, Serialize, Deserialize, Debug)]
 pub struct ServiceEntry {
     pub Node: Node,
     pub Service: AgentService,

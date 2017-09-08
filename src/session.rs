@@ -5,13 +5,14 @@ use {Client, QueryOptions, QueryMeta, WriteOptions, WriteMeta};
 use errors::Result;
 use request::{get, put};
 
-
-#[derive(Clone, Eq, PartialEq, Serialize, Deserialize, Debug)]
+#[serde(default)]
+#[derive(Clone, Default, Eq, PartialEq, Serialize, Deserialize, Debug)]
 pub struct SessionID {
     pub ID: String,
 }
 
-#[derive(Clone, Eq, PartialEq, Serialize, Default, Deserialize, Debug)]
+#[serde(default)]
+#[derive(Clone, Default, Eq, PartialEq, Serialize, Deserialize, Debug)]
 pub struct SessionEntry {
     pub CreateIndex: Option<u64>,
     pub ID: Option<String>,

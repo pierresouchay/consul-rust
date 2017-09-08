@@ -6,8 +6,8 @@ use errors::Result;
 use request::{delete, get, get_vec, put};
 
 
-
-#[derive(Clone, Eq, PartialEq, Serialize, Deserialize, Debug, Default)]
+#[serde(default)]
+#[derive(Clone, Default, Eq, PartialEq, Serialize, Deserialize, Debug)]
 pub struct KVPair {
     pub Key: String,
     pub CreateIndex: Option<u64>,

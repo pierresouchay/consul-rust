@@ -1,22 +1,22 @@
 use std::collections::HashMap;
 
-use {Client, QueryOptions, QueryMeta, WriteOptions, WriteMeta};
+use {Client, QueryMeta};
 
 use errors::Result;
 use request::get;
 
 pub struct CatalogDeregistration {
     pub Node: String,
-    pub Datacenter: Option<String>,
-    pub CheckID: Option<String>,
-    pub ServiceID: Option<String>,
+    pub Datacenter: String,
+    pub CheckID: String,
+    pub ServiceID: String,
 }
 
 
 
 pub trait Catalog {
     fn datacenters(&self) -> Result<(Vec<String>, QueryMeta)>;
-    fn deregister(&self, &CatalogDeregistration, &WriteOptions) -> Result<((), WriteMeta)>;
+    //fn deregister(&self, &CatalogDeregistration, &WriteOptions) -> Result<((), WriteMeta)>;
 }
 
 impl Catalog for Client {
@@ -29,11 +29,11 @@ impl Catalog for Client {
         )
     }
 
-    fn deregister(
+    /*fn deregister(
         &self,
         dereg: &CatalogDeregistration,
         q: &WriteOptions,
     ) -> Result<((), WriteMeta)> {
         unimplemented!();
-    }
+    }*/
 }
