@@ -29,3 +29,17 @@ pub fn test_health(){
     assert!(!list.is_empty());
     println!("Consul nodes: {}", serde_json::to_string(&list).unwrap());
 }
+
+
+#[test]
+pub fn test_put_value(){
+    let ks = consul::Keystore::new("http://127.0.0.1:8500");
+    let key: String = "foo".to_string();
+    let value: String = "var".to_string();
+
+    let result = ks.set_key(key.clone(), value);
+    assert!(result.is_ok());
+
+    let result = ks.get_key(key).unwrap().unwrap();
+    assert_eq!(result, "dmFy");
+}
