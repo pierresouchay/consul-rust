@@ -1,9 +1,8 @@
 language: rust
 rust:
-  - 1.15.0
-  - 1.15.1
-  - 1.16.0
+  - 1.21.0
   - stable
+  - nightly
 before_install:
   - curl -L -o /tmp/consul.zip https://releases.hashicorp.com/consul/0.6.4/consul_0.6.4_linux_amd64.zip
   - unzip /tmp/consul.zip
