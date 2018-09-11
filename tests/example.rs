@@ -15,7 +15,7 @@ pub fn test_agent() {
 }
 
 #[test]
-pub fn test_catalog(){
+pub fn test_catalog() {
     let client = consul::Client::new("http://127.0.0.1:8500");
     let map: HashMap<String, Vec<String>> = client.catalog.services().unwrap();
     assert!(map.contains_key("consul"));
@@ -23,16 +23,30 @@ pub fn test_catalog(){
 
 
 #[test]
-pub fn test_health(){
+pub fn test_health() {
     let client = consul::Client::new("http://127.0.0.1:8500");
     let list: Vec<consul::HealthService> = client.health.service("consul", None).unwrap();
     assert!(!list.is_empty());
     println!("Consul nodes: {}", serde_json::to_string(&list).unwrap());
 }
 
+#[test]
+pub fn test_register_service() {
+    let client = consul::Client::new("http://127.0.0.1:8500");
+    let service = consul::RegisterService {
+        ID: "test-id".to_string(),
+        Name: "test-service".to_string(),
+        Tags: [].to_vec(),
+        Port: 8080,
+        Address: "localhost".to_string()
+    };
+    let register_result = client.agent.register(service).unwrap();
+    assert_eq!(register_result,());
+    assert_eq!(client.agent.services().unwrap().get("test-id").unwrap().Address, "localhost")
+}
 
 #[test]
-pub fn test_put_value(){
+pub fn test_put_value() {
     let ks = consul::Keystore::new("http://127.0.0.1:8500");
     let key: String = "foo".to_string();
     let value: String = "var".to_string();
