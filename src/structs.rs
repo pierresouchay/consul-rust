@@ -14,11 +14,12 @@ pub struct Service {
     pub Service: String,
     pub Tags: Option<Vec<String>>,
     pub Port: u32,
+    pub Address: String
 }
 
 /// HealthService is used for the health service
 #[derive(Serialize, Deserialize)]
-pub struct HealthService{
+pub struct HealthService {
     pub Node: Node,
     pub Service: Service,
 }
