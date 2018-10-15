@@ -8,20 +8,22 @@ use super::HealthService;
 
 /// Health can be used to query the Health endpoints
 pub struct Health{
-    handler: Handler
+    handler: Handler,
+    header: String
 }
 
 
 impl Health {
 
-    pub fn new(address: &str) -> Health {
+    pub fn new(address: &str, consul_token: &str) -> Health {
         Health {
-            handler: Handler::new(&format!("{}/v1/health", address))
+            handler: Handler::new(&format!("{}/v1/health", address)),
+            header: consul_token.to_string()
         }
     }
 
     fn request(&self, uri: &str) -> ConsulResult<Vec<HealthService>> {
-        let result = self.handler.get(uri)?;
+        let result = self.handler.get(uri, Some(self.header.clone()))?;
         serde_json::from_str(&result)
             .map_err(|e| e.description().to_owned())
     }
@@ -36,7 +38,7 @@ impl Health {
 
     pub fn healthy_nodes_by_service(&self, service_id: &str) -> ConsulResult<Vec<String>> {
         let uri = format!("service/{}", service_id);
-        let result = self.handler.get(&uri)?;
+        let result = self.handler.get(&uri, Some(self.header.clone()))?;
         let json_data: Value = serde_json::from_str(&result)
             .map_err(|e| e.description().to_owned())?;
         let v_nodes = json_data.as_array()
@@ -77,7 +79,7 @@ impl Health {
 
     pub fn get_healthy_nodes(&self, service_id: &str) -> Result<Vec<String>, String> {
         let uri = format!("checks/{}", service_id);
-        let result = self.handler.get(&uri)?;
+        let result = self.handler.get(&uri, Some(self.header.clone()))?;
         let json_data: Value = serde_json::from_str(&result)
             .map_err(|e| e.description().to_owned())?;
         let v_nodes = json_data.as_array()

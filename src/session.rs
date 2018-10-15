@@ -22,13 +22,15 @@ pub struct SessionID {
 }
 
 pub struct Session {
-    handler: Handler
+    handler: Handler,
+    header: String
 }
 
 impl Session {
-    pub fn new(address: &str) ->  Session {
+    pub fn new(address: &str, consul_token: &str) ->  Session {
         Session {
-            handler: Handler::new(&format!("{}/v1/session", address))
+            handler: Handler::new(&format!("{}/v1/session", address)),
+            header: consul_token.to_string()
         }
     }
 
@@ -40,7 +42,7 @@ impl Session {
         let json_str = serde_json::to_string(&session)
             .map_err(|e| e.description().to_owned())?;
 
-        let result = self.handler.put("create", json_str, Some("application/json"))?;
+        let result = self.handler.put("create", json_str, Some("application/json"), Some(self.header.clone()))?;
 
         let json_data = serde_json::from_str(&result)
             .map_err(|e| e.description().to_owned())?;
@@ -50,7 +52,7 @@ impl Session {
     pub fn renew(&self, session_id: &String) -> ConsulResult<bool> {
         for _ in 0..10 {
             let uri = format!("renew/{}", session_id);
-            match self.handler.put(&uri, "".to_owned(), Some("application/json")) {
+            match self.handler.put(&uri, "".to_owned(), Some("application/json"), Some(self.header.clone())) {
                 Ok(_) => return Ok(true),
                 Err(e) => {
                     println!("Could not renew session: {}, returned error: {}. Sleeping for 2 seconds", session_id, e);
@@ -63,7 +65,7 @@ impl Session {
 
     pub fn end(&self, session_id: &String) -> ConsulResult<()> {
         let uri = format!("destroy/{}", session_id);
-        self.handler.put(&uri, "".to_owned(), Some("application/json"))?;
+        self.handler.put(&uri, "".to_owned(), Some("application/json"), Some(self.header.clone()))?;
         Ok(())
     }
 
