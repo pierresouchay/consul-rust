@@ -15,14 +15,16 @@ pub struct Client{
 
 impl Client {
     /// Constructs a consul client
-    pub fn new<'a, S>(address: S) -> Client where S: Into<Cow<'a, str>> {
+    pub fn new<'a, S>(address: S, consul_token: S) -> Client where S: Into<Cow<'a, str>> {
         let cow = address.into();
         let addr = cow.borrow();
-        let agent = Agent::new(addr);
-        let catalog = Catalog::new(addr);
-        let health = Health::new(addr);
-        let keystore = Keystore::new(addr);
-        let session = Session::new(addr);
+        let header_cow = consul_token.into();
+        let header_token = header_cow.borrow();
+        let agent = Agent::new(addr, header_token);
+        let catalog = Catalog::new(addr, header_token);
+        let health = Health::new(addr, header_token);
+        let keystore = Keystore::new(addr, header_token);
+        let session = Session::new(addr, header_token);
         Client {
             agent: agent,
             catalog: catalog,

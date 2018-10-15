@@ -38,9 +38,13 @@ impl Handler {
         }
     }
 
-    pub fn get(&self, endpoint: &str) -> ConsulResult<String> {
+    pub fn get(&self, endpoint: &str, consul_token: Option<String>) -> ConsulResult<String> {
         let full_url = format!("{}/{}", self.url.trim_right_matches('/'), endpoint);
+        let mut headers = Headers::new();
+        headers.append_raw("X-Consul-Token", consul_token.unwrap().as_bytes().to_vec());
+
         let mut res = self.client.get(&full_url)
+            .headers(headers)
             .send()
             .map_err(|e| format!("{}", e))?;
 
@@ -92,7 +96,7 @@ impl Handler {
         }
     }
 
-    pub fn put(&self, endpoint: &str, req: String, content_type: Option<&str>) -> ConsulResult<String> {
+    pub fn put(&self, endpoint: &str, req: String, content_type: Option<&str>, consul_token: Option<String>) -> ConsulResult<String> {
         let full_url = format!("{}/{}", self.url.trim_right_matches('/'), endpoint);
 
         let mut res;
@@ -100,6 +104,8 @@ impl Handler {
             let mime: Mime = content.parse().unwrap();
             let mut headers = Headers::new();
             headers.set(ContentType(mime));
+            headers.append_raw("X-Consul-Token", consul_token.unwrap().as_bytes().to_vec());
+
             res = self.client.put(&full_url)
                 .headers(headers)
                 .body(&req)

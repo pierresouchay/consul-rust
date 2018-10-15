@@ -6,24 +6,26 @@ use error::ConsulResult;
 use std::error::Error;
 
 pub struct Keystore{
-    handler: Handler
+    handler: Handler,
+    header: String
 }
 
 impl Keystore {
-    pub fn new(address: &str) ->  Keystore {
+    pub fn new(address: &str, consul_token: &str) ->  Keystore {
         Keystore {
-            handler: Handler::new(&format!("{}/v1/kv", address))
+            handler: Handler::new(&format!("{}/v1/kv", address)),
+            header: consul_token.to_string()
         }
     }
 
     pub fn set_key(&self, key: String, value: String) -> ConsulResult<()> {
-        self.handler.put(&key, value, Some("application/json"))?;
+        self.handler.put(&key, value, Some("application/json"), Some(self.header.clone()))?;
         Ok(())
     }
 
     pub fn acquire_lock(&self, key: String, address: String, session_id: &String) -> ConsulResult<bool> {
         let uri = format!("{}?acquire={}", key, session_id);
-        let result = self.handler.put(&uri, address, Some("application/json"))?;
+        let result = self.handler.put(&uri, address, Some("application/json"), Some(self.header.clone()))?;
         if result == "true" {
             Ok(true)
         }
@@ -34,7 +36,7 @@ impl Keystore {
 
     pub fn release_lock(&self, key: String, address: &str, session_id: &String) -> ConsulResult<bool> {
         let uri = format!("{}?release={}", key, session_id);
-        let result = self.handler.put(&uri, address.to_owned(), Some("application/json"))?;
+        let result = self.handler.put(&uri, address.to_owned(), Some("application/json"), Some(self.header.clone()))?;
         if result == "true" {
             Ok(true)
         }
@@ -44,7 +46,7 @@ impl Keystore {
     }
 
     pub fn get_key(&self, key: String) -> ConsulResult<Option<String>> {
-        let result = self.handler.get(&key)?;
+        let result = self.handler.get(&key, Some(self.header.clone()))?;
         let json_data: Value = serde_json::from_str(&result)
             .map_err(|e| e.description().to_owned())?;
         let v_json = json_data.as_array().unwrap();
