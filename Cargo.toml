@@ -14,8 +14,8 @@ keywords = ["consul", "discovery"]
 
 
 [dependencies]
-error-chain = "0.10"
+error-chain = "^0.12"
 serde = "1"
 serde_derive = "1"
-reqwest = "0.6"
+reqwest = {version="^0.9", features=["default-tls"]}
 url = "1.5"
