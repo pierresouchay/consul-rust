@@ -9,6 +9,7 @@ use std::time::Instant;
 use reqwest::Client as HttpClient;
 use reqwest::RequestBuilder;
 use reqwest::StatusCode;
+use reqwest::header::HeaderValue;
 use serde::Serialize;
 use serde::de::DeserializeOwned;
 
@@ -50,14 +51,14 @@ pub fn get_vec<R: DeserializeOwned>(
     response
         .chain_err(|| "HTTP request to consul failed")
         .and_then(|mut r| {
-            let j = if *r.status() != StatusCode::NotFound {
+            let j = if r.status() != StatusCode::NOT_FOUND {
                 r.json().chain_err(|| "Failed to parse JSON response")?
             } else {
                 Vec::new()
             };
             let x: Option<Result<u64>> = r.headers()
-                .get_raw("X-Consul-Index")
-                .and_then(|bytes| bytes.first())
+                .get("X-Consul-Index")
+                .and_then(|value: &HeaderValue| Some(value.as_bytes()))
                 .map(|bytes| {
                     str::from_utf8(bytes)
                         .chain_err(|| "Failed to parse valid UT8 for last index")
@@ -118,15 +119,13 @@ pub fn get<R: DeserializeOwned>(
         .and_then(|mut r| {
             let j = r.json().chain_err(|| "Failed to parse JSON response")?;
             let x: Option<Result<u64>> = r.headers()
-                .get_raw("X-Consul-Index")
-                .and_then(|bytes| bytes.first())
-                .map(|bytes| {
-                    str::from_utf8(bytes)
+                .get("X-Consul-Index")
+                .map(|bytes: &HeaderValue|->Result<u64>{
+                    bytes.to_str()
                         .chain_err(|| "Failed to parse valid UT8 for last index")
-                        .and_then(|s| {
-                            u64::from_str(s).chain_err(
-                                || "Failed to parse valid number for last index",
-                            )
+                        .and_then(|s:&str|->Result<u64>{
+                            u64::from_str(s)
+                                .chain_err( || "Failed to parse valid number for last index")
                         })
                 });
 
