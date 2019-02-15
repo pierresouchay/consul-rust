@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use {Client, QueryMeta};
 
-use errors::Result;
+use error::*;
 use request::get;
 
 pub struct CatalogDeregistration {
@@ -11,8 +11,6 @@ pub struct CatalogDeregistration {
     pub CheckID: String,
     pub ServiceID: String,
 }
-
-
 
 pub trait Catalog {
     fn datacenters(&self) -> Result<(Vec<String>, QueryMeta)>;

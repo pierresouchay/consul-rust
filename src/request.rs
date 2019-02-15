@@ -1,23 +1,20 @@
-use url::Url;
 use std::collections::HashMap;
+use url::Url;
 
 use std::str;
 use std::str::FromStr;
 use std::time::Instant;
 
-
+use reqwest::header::HeaderValue;
 use reqwest::Client as HttpClient;
 use reqwest::RequestBuilder;
 use reqwest::StatusCode;
-use reqwest::header::HeaderValue;
-use serde::Serialize;
 use serde::de::DeserializeOwned;
+use serde::Serialize;
 
-
-use {Config, QueryOptions, QueryMeta, WriteOptions, WriteMeta};
-use errors::Result;
-
-use errors::ResultExt;
+use error::{Error, ErrorKind, Result};
+use failure::ResultExt;
+use {Config, QueryMeta, QueryOptions, WriteMeta, WriteOptions};
 
 pub fn get_vec<R: DeserializeOwned>(
     path: &str,
@@ -25,9 +22,9 @@ pub fn get_vec<R: DeserializeOwned>(
     mut params: HashMap<String, String>,
     options: Option<&QueryOptions>,
 ) -> Result<(Vec<R>, QueryMeta)> {
-    let datacenter: Option<&String> = options.and_then(|o| o.datacenter.as_ref()).or_else(|| {
-        config.datacenter.as_ref()
-    });
+    let datacenter: Option<&String> = options
+        .and_then(|o| o.datacenter.as_ref())
+        .or_else(|| config.datacenter.as_ref());
 
     if let Some(dc) = datacenter {
         params.insert(String::from("dc"), dc.to_owned());
@@ -41,48 +38,41 @@ pub fn get_vec<R: DeserializeOwned>(
         }
     }
 
-
     let url_str = format!("{}{}", config.address, path);
-    let url = Url::parse_with_params(&url_str, params.iter()).chain_err(
-        || "Failed to parse URL",
-    )?;
+    let url = Url::parse_with_params(&url_str, params.iter())?;
     let start = Instant::now();
-    let response = config.http_client.get(url).send();
-    response
-        .chain_err(|| "HTTP request to consul failed")
-        .and_then(|mut r| {
-            let j = if r.status() != StatusCode::NOT_FOUND {
-                r.json().chain_err(|| "Failed to parse JSON response")?
-            } else {
-                Vec::new()
-            };
-            let x: Option<Result<u64>> = r.headers()
-                .get("X-Consul-Index")
-                .and_then(|value: &HeaderValue| Some(value.as_bytes()))
-                .map(|bytes| {
-                    str::from_utf8(bytes)
-                        .chain_err(|| "Failed to parse valid UT8 for last index")
+    let mut r = config.http_client.get(url).send()?;
+    let j = if r.status() != StatusCode::NOT_FOUND {
+        r.json().context(ErrorKind::InvalidJson)?
+    } else {
+        Vec::new()
+    };
+    let x: Option<Result<u64>> =
+        r.headers()
+            .get("X-Consul-Index")
+            .and_then(|value: &HeaderValue| {
+                Some(
+                    str::from_utf8(value.as_bytes())
+                        .map_err(|e| Error::from(ErrorKind::Utf8Error(e)))
                         .and_then(|s| {
-                            u64::from_str(s).chain_err(
-                                || "Failed to parse valid number for last index",
-                            )
-                        })
-                });
+                            u64::from_str(s).map_err(|e| Error::from(ErrorKind::IntError(e)))
+                        }),
+                )
+            });
 
-            match x {
-                Some(r) => Ok((j, Some(r?))),
-                None => Ok((j, None)),
-            }
-        })
-        .map(|x: (Vec<R>, Option<u64>)| {
-            (
-                x.0,
-                QueryMeta {
-                    last_index: x.1,
-                    request_time: Instant::now() - start,
-                },
-            )
-        })
+    match x {
+        Some(r) => Ok((j, Some(r?))),
+        None => Ok((j, None)),
+    }
+    .map(|x: (Vec<R>, Option<u64>)| {
+        (
+            x.0,
+            QueryMeta {
+                last_index: x.1,
+                request_time: Instant::now() - start,
+            },
+        )
+    })
 }
 
 pub fn get<R: DeserializeOwned>(
@@ -91,9 +81,9 @@ pub fn get<R: DeserializeOwned>(
     mut params: HashMap<String, String>,
     options: Option<&QueryOptions>,
 ) -> Result<(R, QueryMeta)> {
-    let datacenter: Option<&String> = options.and_then(|o| o.datacenter.as_ref()).or_else(|| {
-        config.datacenter.as_ref()
-    });
+    let datacenter: Option<&String> = options
+        .and_then(|o| o.datacenter.as_ref())
+        .or_else(|| config.datacenter.as_ref());
 
     if let Some(dc) = datacenter {
         params.insert(String::from("dc"), dc.to_owned());
@@ -107,42 +97,36 @@ pub fn get<R: DeserializeOwned>(
         }
     }
 
-
     let url_str = format!("{}{}", config.address, path);
-    let url = Url::parse_with_params(&url_str, params.iter()).chain_err(
-        || "Failed to parse URL",
-    )?;
+    let url = Url::parse_with_params(&url_str, params.iter())?;
     let start = Instant::now();
-    let response = config.http_client.get(url).send();
-    response
-        .chain_err(|| "HTTP request to consul failed")
-        .and_then(|mut r| {
-            let j = r.json().chain_err(|| "Failed to parse JSON response")?;
-            let x: Option<Result<u64>> = r.headers()
-                .get("X-Consul-Index")
-                .map(|bytes: &HeaderValue|->Result<u64>{
-                    bytes.to_str()
-                        .chain_err(|| "Failed to parse valid UT8 for last index")
-                        .and_then(|s:&str|->Result<u64>{
-                            u64::from_str(s)
-                                .chain_err( || "Failed to parse valid number for last index")
-                        })
-                });
-
-            match x {
-                Some(r) => Ok((j, Some(r?))),
-                None => Ok((j, None)),
-            }
-        })
-        .map(|x: (R, Option<u64>)| {
-            (
-                x.0,
-                QueryMeta {
-                    last_index: x.1,
-                    request_time: Instant::now() - start,
-                },
-            )
-        })
+    let mut r = config.http_client.get(url).send()?;
+    let j = r.json().context(ErrorKind::InvalidJson)?;
+    let x: Option<Result<u64>> =
+        r.headers()
+            .get("X-Consul-Index")
+            .and_then(|value: &HeaderValue| {
+                Some(
+                    str::from_utf8(value.as_bytes())
+                        .map_err(|e| Error::from(ErrorKind::Utf8Error(e)))
+                        .and_then(|s| {
+                            u64::from_str(s).map_err(|e| Error::from(ErrorKind::IntError(e)))
+                        }),
+                )
+            });
+    match x {
+        Some(r) => Ok((j, Some(r?))),
+        None => Ok((j, None)),
+    }
+    .map(|x: (R, Option<u64>)| {
+        (
+            x.0,
+            QueryMeta {
+                last_index: x.1,
+                request_time: Instant::now() - start,
+            },
+        )
+    })
 }
 
 pub fn delete<R: DeserializeOwned>(
@@ -176,7 +160,6 @@ pub fn put<T: Serialize, R: DeserializeOwned>(
     write_with_body(path, body, config, params, options, req)
 }
 
-
 fn write_with_body<T: Serialize, R: DeserializeOwned, F>(
     path: &str,
     body: Option<&T>,
@@ -189,28 +172,27 @@ where
     F: Fn(&HttpClient, Url) -> RequestBuilder,
 {
     let start = Instant::now();
-    let datacenter: Option<&String> = options.and_then(|o| o.datacenter.as_ref()).or_else(|| {
-        config.datacenter.as_ref()
-    });
+    let datacenter: Option<&String> = options
+        .and_then(|o| o.datacenter.as_ref())
+        .or_else(|| config.datacenter.as_ref());
 
     if let Some(dc) = datacenter {
         params.insert(String::from("dc"), dc.to_owned());
     }
 
-
     let url_str = format!("{}{}", config.address, path);
-    let url = Url::parse_with_params(&url_str, params.iter()).chain_err(
-        || "Failed to parse URL",
-    )?;
+    let url = Url::parse_with_params(&url_str, params.iter())?;
     let builder = req(&config.http_client, url);
     let builder = if let Some(b) = body {
         builder.json(b)
     } else {
         builder
     };
-    builder
-        .send()
-        .chain_err(|| "HTTP request to consul failed")
-        .and_then(|mut x| x.json().chain_err(|| "Failed to parse JSON"))
-        .map(|x| (x, WriteMeta { request_time: Instant::now() - start }))
+    let mut response = builder.send()?;
+    Ok((
+        response.json().context(ErrorKind::InvalidJson)?,
+        WriteMeta {
+            request_time: Instant::now() - start,
+        },
+    ))
 }

@@ -1,9 +1,9 @@
 use std::collections::HashMap;
 
 use agent::AgentService;
-use {Client, QueryOptions, QueryMeta};
-use errors::Result;
+use error::*;
 use request::get;
+use {Client, QueryMeta, QueryOptions};
 
 #[serde(default)]
 #[derive(Eq, Default, PartialEq, Serialize, Deserialize, Debug)]

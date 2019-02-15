@@ -1,10 +1,8 @@
 use std::collections::HashMap;
 
-use {Client, QueryOptions, QueryMeta, WriteOptions, WriteMeta};
-use errors::Error;
-use errors::Result;
+use error::*;
 use request::{delete, get, get_vec, put};
-
+use {Client, QueryMeta, QueryOptions, WriteMeta, WriteOptions};
 
 #[serde(default)]
 #[derive(Clone, Default, Eq, PartialEq, Serialize, Deserialize, Debug)]
@@ -40,7 +38,7 @@ impl KV for Client {
             let path = format!("/v1/kv/{}", pair.Key);
             put(&path, Some(&pair.Value), &self.config, params, o)
         } else {
-            Err(Error::from("Session flag is required to acquire lock"))
+            Err(ErrorKind::MissingSessionFlag)?
         }
     }
 
@@ -88,7 +86,7 @@ impl KV for Client {
             let path = format!("/v1/kv/{}", pair.Key);
             put(&path, Some(&pair.Value), &self.config, params, o)
         } else {
-            Err(Error::from("Session flag is required to release a lock"))
+            Err(ErrorKind::MissingSessionFlag)?
         }
     }
 }

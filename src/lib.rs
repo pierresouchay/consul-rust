@@ -1,8 +1,7 @@
 #![allow(non_snake_case)]
 #![allow(unused_doc_comments)]
 
-#[macro_use]
-extern crate error_chain;
+extern crate failure;
 extern crate reqwest;
 #[macro_use]
 extern crate serde_derive;
@@ -11,7 +10,7 @@ extern crate url;
 
 pub mod agent;
 pub mod catalog;
-pub mod errors;
+mod error;
 pub mod health;
 pub mod kv;
 pub mod session;
@@ -23,8 +22,7 @@ use std::time::Duration;
 use reqwest::Client as HttpClient;
 use reqwest::ClientBuilder;
 
-use errors::Result;
-use errors::ResultExt;
+use error::*;
 
 #[derive(Clone, Debug)]
 pub struct Client {
@@ -68,14 +66,12 @@ impl ConfigBuilder {
     }
 
     pub fn build(self) -> Result<Config> {
-        ClientBuilder::new()
-            .build()
-            .chain_err(|| "Failed to build reqwest client")
-            .map(|client| Config {
-                address: self.address,
-                datacenter: self.datacenter,
-                http_client: client,
-            })
+        let client = ClientBuilder::new().build()?;
+        Ok(Config {
+            address: self.address,
+            datacenter: self.datacenter,
+            http_client: client,
+        })
     }
 }
 
