@@ -1,11 +1,12 @@
-#![allow(non_snake_case)]
 #![allow(unused_doc_comments)]
 
+extern crate base64;
 extern crate failure;
 extern crate reqwest;
+extern crate serde;
 #[macro_use]
 extern crate serde_derive;
-extern crate serde;
+extern crate serde_json;
 extern crate url;
 
 pub mod agent;
@@ -22,7 +23,7 @@ use std::time::Duration;
 use reqwest::Client as HttpClient;
 use reqwest::ClientBuilder;
 
-use error::*;
+pub use error::{Error, ErrorKind, Result};
 
 #[derive(Clone, Debug)]
 pub struct Client {
@@ -31,14 +32,16 @@ pub struct Client {
 
 impl Client {
     pub fn new(config: Config) -> Self {
-        Client { config: config }
+        Client { config }
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Default)]
 pub struct ConfigBuilder {
     pub address: String,
     pub datacenter: Option<String>,
+    pub timeout: Option<Duration>,
+    pub token: Option<String>,
 }
 
 impl ConfigBuilder {
@@ -46,10 +49,12 @@ impl ConfigBuilder {
         ConfigBuilder {
             address: String::from("http://localhost:8500"),
             datacenter: None,
+            token: None,
+            timeout: None,
         }
     }
 
-    pub fn address<I>(mut self, url: I) -> ConfigBuilder
+    pub fn address<I>(&mut self, url: I) -> &mut ConfigBuilder
     where
         I: Into<String>,
     {
@@ -57,19 +62,37 @@ impl ConfigBuilder {
         self
     }
 
-    pub fn datacenter<I>(mut self, name: I) -> ConfigBuilder
+    pub fn datacenter<I>(&mut self, datacenter: I) -> &mut ConfigBuilder
     where
         I: Into<String>,
     {
-        self.datacenter = Some(name.into());
+        self.datacenter = Some(datacenter.into());
         self
     }
 
-    pub fn build(self) -> Result<Config> {
-        let client = ClientBuilder::new().build()?;
+    pub fn timeout(&mut self, timeout: Duration) -> &mut ConfigBuilder {
+        self.timeout = Some(timeout);
+        self
+    }
+
+    pub fn token<I>(&mut self, token: I) -> &mut ConfigBuilder
+    where
+        I: Into<String>,
+    {
+        self.token = Some(token.into());
+        self
+    }
+
+    pub fn build(&mut self) -> Result<Config> {
+        let client = if let Some(timeout) = self.timeout {
+            ClientBuilder::new().timeout(timeout).build()?
+        } else {
+            ClientBuilder::new().build()?
+        };
         Ok(Config {
-            address: self.address,
-            datacenter: self.datacenter,
+            address: self.address.to_string(),
+            datacenter: self.datacenter.take(),
+            token: self.token.take(),
             http_client: client,
         })
     }
@@ -77,9 +100,10 @@ impl ConfigBuilder {
 
 #[derive(Clone, Debug)]
 pub struct Config {
+    http_client: HttpClient,
     address: String,
     datacenter: Option<String>,
-    http_client: HttpClient,
+    token: Option<String>,
 }
 
 impl Config {
@@ -91,34 +115,19 @@ impl Config {
         &self.address
     }
 
-    pub fn datacenter(&self) -> &Option<String> {
-        &self.datacenter
-    }
-
     pub fn client(&self) -> &HttpClient {
         &self.http_client
     }
 }
 
 #[derive(Clone, Debug, Default)]
-pub struct QueryOptions {
-    pub datacenter: Option<String>,
-    pub wait_index: Option<u64>,
-    pub wait_time: Option<Duration>,
-}
-
-#[derive(Clone, Debug)]
-pub struct QueryMeta {
-    pub last_index: Option<u64>,
-    pub request_time: Duration,
+pub struct BlockingOptions<T> {
+    pub wait: Option<Duration>,
+    pub options: Option<T>,
 }
 
 #[derive(Clone, Debug, Default)]
-pub struct WriteOptions {
-    pub datacenter: Option<String>,
-}
-
-#[derive(Clone, Debug)]
-pub struct WriteMeta {
-    pub request_time: Duration,
+pub struct BlockingResponse<T> {
+    pub index: u64,
+    pub body: T,
 }

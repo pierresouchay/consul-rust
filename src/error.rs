@@ -5,6 +5,7 @@ pub use failure::ResultExt;
 use failure::{Backtrace, Context, Fail};
 
 use reqwest;
+use serde_json;
 
 pub type Result<T> = result::Result<T, Error>;
 
@@ -15,20 +16,28 @@ pub struct Error {
 
 #[derive(Clone, Debug, Eq, PartialEq, Fail)]
 pub enum ErrorKind {
-    #[fail(display = "Failed to parse JSON")]
-    InvalidJson,
+    #[fail(display = "Failed to parse option value")]
+    InvalidOption,
+    #[fail(display = "Failed to parse index")]
+    InvalidIndex,
+    #[fail(display = "Failed to parse response")]
+    InvalidResponse,
     #[fail(display = "Session flag is require to acquire lock")]
     MissingSessionFlag,
+    #[fail(display = "Index missing from response header")]
+    MissingIndex,
+    #[fail(display = "Key not found")]
+    KeyNotFound,
+    #[fail(display = "Unexpected response: {}", _0)]
+    UnexpectedResponse(String),
     #[fail(display = "Utf8Error")]
     Utf8Error(#[cause] std::str::Utf8Error),
     #[fail(display = "IntError")]
     IntError(#[cause] std::num::ParseIntError),
-    // NOTE: reqwest::Error does not implement PartialEq, so we will have to work around that for
-    // now
-    //#[fail(display = "ReqwestError")]
-    //ReqwestError(#[cause] reqwest::Error),
-    #[fail(display = "reqwest error: {}", _0)]
+    #[fail(display = "Reqwest error: {}", _0)]
     Reqwest(String),
+    #[fail(display = "Serde JSON error: {}", _0)]
+    SerdeJson(String),
 }
 
 impl Error {
@@ -79,6 +88,14 @@ impl From<reqwest::UrlError> for Error {
     fn from(err: reqwest::UrlError) -> Error {
         Error {
             inner: Context::new(ErrorKind::Reqwest(err.to_string())),
+        }
+    }
+}
+
+impl From<serde_json::Error> for Error {
+    fn from(err: serde_json::Error) -> Error {
+        Error {
+            inner: Context::new(ErrorKind::SerdeJson(err.to_string())),
         }
     }
 }

@@ -1,198 +1,91 @@
 use std::collections::HashMap;
+use std::convert::Into;
 use url::Url;
 
-use std::str;
-use std::str::FromStr;
-use std::time::Instant;
-
-use reqwest::header::HeaderValue;
-use reqwest::Client as HttpClient;
-use reqwest::RequestBuilder;
-use reqwest::StatusCode;
-use serde::de::DeserializeOwned;
+use reqwest;
+use reqwest::header::{HeaderValue, CONTENT_TYPE};
+pub use reqwest::{Method, StatusCode};
 use serde::Serialize;
+use serde_json;
 
-use error::{Error, ErrorKind, Result};
-use failure::ResultExt;
-use {Config, QueryMeta, QueryOptions, WriteMeta, WriteOptions};
+use error::{Error, Result};
+use Client;
 
-pub fn get_vec<R: DeserializeOwned>(
-    path: &str,
-    config: &Config,
-    mut params: HashMap<String, String>,
-    options: Option<&QueryOptions>,
-) -> Result<(Vec<R>, QueryMeta)> {
-    let datacenter: Option<&String> = options
-        .and_then(|o| o.datacenter.as_ref())
-        .or_else(|| config.datacenter.as_ref());
+const API_VERSION: &str = "v1";
 
-    if let Some(dc) = datacenter {
-        params.insert(String::from("dc"), dc.to_owned());
-    }
-    if let Some(options) = options {
-        if let Some(index) = options.wait_index {
-            params.insert(String::from("index"), index.to_string());
-        }
-        if let Some(wait_time) = options.wait_time {
-            params.insert(String::from("wait"), format!("{}s", wait_time.as_secs()));
-        }
-    }
-
-    let url_str = format!("{}{}", config.address, path);
-    let url = Url::parse_with_params(&url_str, params.iter())?;
-    let start = Instant::now();
-    let mut r = config.http_client.get(url).send()?;
-    let j = if r.status() != StatusCode::NOT_FOUND {
-        r.json().context(ErrorKind::InvalidJson)?
-    } else {
-        Vec::new()
-    };
-    let x: Option<Result<u64>> =
-        r.headers()
-            .get("X-Consul-Index")
-            .and_then(|value: &HeaderValue| {
-                Some(
-                    str::from_utf8(value.as_bytes())
-                        .map_err(|e| Error::from(ErrorKind::Utf8Error(e)))
-                        .and_then(|s| {
-                            u64::from_str(s).map_err(|e| Error::from(ErrorKind::IntError(e)))
-                        }),
-                )
-            });
-
-    match x {
-        Some(r) => Ok((j, Some(r?))),
-        None => Ok((j, None)),
-    }
-    .map(|x: (Vec<R>, Option<u64>)| {
-        (
-            x.0,
-            QueryMeta {
-                last_index: x.1,
-                request_time: Instant::now() - start,
-            },
-        )
-    })
+// This is a bespoke version of reqwest's RequestBuilder
+pub struct Request {
+    client: reqwest::Client,
+    request: Option<reqwest::Request>,
+    err: Option<Error>, // Will only report the first error...
 }
 
-pub fn get<R: DeserializeOwned>(
-    path: &str,
-    config: &Config,
-    mut params: HashMap<String, String>,
-    options: Option<&QueryOptions>,
-) -> Result<(R, QueryMeta)> {
-    let datacenter: Option<&String> = options
-        .and_then(|o| o.datacenter.as_ref())
-        .or_else(|| config.datacenter.as_ref());
-
-    if let Some(dc) = datacenter {
-        params.insert(String::from("dc"), dc.to_owned());
+impl Request {
+    pub fn new(client: &Client, method: Method, path: &str) -> Request {
+        Request::new_with_params(client, method, path, HashMap::new())
     }
-    if let Some(options) = options {
-        if let Some(index) = options.wait_index {
-            params.insert(String::from("index"), index.to_string());
+
+    pub fn new_with_params(
+        client: &Client,
+        method: Method,
+        path: &str,
+        params: HashMap<String, String>,
+    ) -> Request {
+        let api = format!("{}/{}/{}", client.config.address, API_VERSION, path);
+        let url = match Url::parse_with_params(&api, params.iter()) {
+            Ok(url) => url,
+            Err(err) => {
+                return Request {
+                    client: client.config.http_client.clone(),
+                    request: None,
+                    err: Some(Error::from(err)),
+                };
+            }
+        };
+        let mut request = reqwest::Request::new(method, url);
+        if let Some(token) = &client.config.token {
+            if let Ok(token) = HeaderValue::from_str(token.as_str()) {
+                request.headers_mut().insert("X-Consul-Token", token);
+            }
         }
-        if let Some(wait_time) = options.wait_time {
-            params.insert(String::from("wait"), format!("{}s", wait_time.as_secs()));
+        Request {
+            client: client.config.http_client.clone(),
+            request: Some(request),
+            err: None,
         }
     }
 
-    let url_str = format!("{}{}", config.address, path);
-    let url = Url::parse_with_params(&url_str, params.iter())?;
-    let start = Instant::now();
-    let mut r = config.http_client.get(url).send()?;
-    let j = r.json().context(ErrorKind::InvalidJson)?;
-    let x: Option<Result<u64>> =
-        r.headers()
-            .get("X-Consul-Index")
-            .and_then(|value: &HeaderValue| {
-                Some(
-                    str::from_utf8(value.as_bytes())
-                        .map_err(|e| Error::from(ErrorKind::Utf8Error(e)))
-                        .and_then(|s| {
-                            u64::from_str(s).map_err(|e| Error::from(ErrorKind::IntError(e)))
-                        }),
-                )
-            });
-    match x {
-        Some(r) => Ok((j, Some(r?))),
-        None => Ok((j, None)),
-    }
-    .map(|x: (R, Option<u64>)| {
-        (
-            x.0,
-            QueryMeta {
-                last_index: x.1,
-                request_time: Instant::now() - start,
-            },
-        )
-    })
-}
-
-pub fn delete<R: DeserializeOwned>(
-    path: &str,
-    config: &Config,
-    params: HashMap<String, String>,
-    options: Option<&WriteOptions>,
-) -> Result<(R, WriteMeta)> {
-    let req = |http_client: &HttpClient, url: Url| -> RequestBuilder { http_client.delete(url) };
-    write_with_body(path, None as Option<&()>, config, params, options, req)
-}
-
-/*
-pub fn post<T: Serialize, R: DeserializeOwned>(path: &str,
-                                               body: Option<&T>,
-                                               config: &Config,
-                                               options: Option<&WriteOptions>)
-                                               -> Result<(R, WriteMeta)> {
-    let req = |http_client: &HttpClient, url: Url| -> RequestBuilder { http_client.post(url) };
-    write_with_body(path, body, config, options, req)
-}
-*/
-pub fn put<T: Serialize, R: DeserializeOwned>(
-    path: &str,
-    body: Option<&T>,
-    config: &Config,
-    params: HashMap<String, String>,
-    options: Option<&WriteOptions>,
-) -> Result<(R, WriteMeta)> {
-    let req = |http_client: &HttpClient, url: Url| -> RequestBuilder { http_client.put(url) };
-    write_with_body(path, body, config, params, options, req)
-}
-
-fn write_with_body<T: Serialize, R: DeserializeOwned, F>(
-    path: &str,
-    body: Option<&T>,
-    config: &Config,
-    mut params: HashMap<String, String>,
-    options: Option<&WriteOptions>,
-    req: F,
-) -> Result<(R, WriteMeta)>
-where
-    F: Fn(&HttpClient, Url) -> RequestBuilder,
-{
-    let start = Instant::now();
-    let datacenter: Option<&String> = options
-        .and_then(|o| o.datacenter.as_ref())
-        .or_else(|| config.datacenter.as_ref());
-
-    if let Some(dc) = datacenter {
-        params.insert(String::from("dc"), dc.to_owned());
+    pub fn body<T: Into<reqwest::Body>>(&mut self, body: T) -> &mut Request {
+        if self.err.is_none() {
+            if let Some(req) = self.request.as_mut() {
+                *req.body_mut() = Some(body.into());
+            }
+        }
+        self
     }
 
-    let url_str = format!("{}{}", config.address, path);
-    let url = Url::parse_with_params(&url_str, params.iter())?;
-    let builder = req(&config.http_client, url);
-    let builder = if let Some(b) = body {
-        builder.json(b)
-    } else {
-        builder
-    };
-    let mut response = builder.send()?;
-    Ok((
-        response.json().context(ErrorKind::InvalidJson)?,
-        WriteMeta {
-            request_time: Instant::now() - start,
-        },
-    ))
+    pub fn json<S: Serialize>(&mut self, json: &S) -> &mut Request {
+        if self.err.is_none() {
+            if let Some(req) = self.request.as_mut() {
+                match serde_json::to_vec(json) {
+                    Ok(body) => {
+                        req.headers_mut()
+                            .insert(CONTENT_TYPE, HeaderValue::from_static("application/json"));
+                        *req.body_mut() = Some(body.into());
+                    }
+                    Err(err) => self.err = Some(Error::from(err)),
+                }
+            }
+        }
+        self
+    }
+
+    pub fn send(&mut self) -> Result<reqwest::Response> {
+        if let Some(err) = self.err.take() {
+            return Err(err);
+        }
+        self.client
+            .execute(self.request.take().expect("Request cannot be reused"))
+            .map_err(|e| e.into())
+    }
 }
