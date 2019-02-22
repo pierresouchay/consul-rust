@@ -39,6 +39,7 @@ impl Client {
 #[derive(Clone, Debug, Default)]
 pub struct ConfigBuilder {
     pub address: String,
+    pub client: Option<HttpClient>,
     pub datacenter: Option<String>,
     pub timeout: Option<Duration>,
     pub token: Option<String>,
@@ -48,6 +49,7 @@ impl ConfigBuilder {
     pub fn new() -> ConfigBuilder {
         ConfigBuilder {
             address: String::from("http://localhost:8500"),
+            client: None,
             datacenter: None,
             token: None,
             timeout: None,
@@ -59,6 +61,11 @@ impl ConfigBuilder {
         I: Into<String>,
     {
         self.address = url.into();
+        self
+    }
+
+    pub fn client<I>(&mut self, client: HttpClient) -> &mut ConfigBuilder {
+        self.client = Some(client);
         self
     }
 
@@ -84,7 +91,9 @@ impl ConfigBuilder {
     }
 
     pub fn build(&mut self) -> Result<Config> {
-        let client = if let Some(timeout) = self.timeout {
+        let client = if let Some(client) = self.client.take() {
+            client
+        } else if let Some(timeout) = self.timeout {
             ClientBuilder::new().timeout(timeout).build()?
         } else {
             ClientBuilder::new().build()?
