@@ -20,7 +20,8 @@ pub struct KvPair {
     pub flags: u64,
     #[serde(deserialize_with = "base64_decode")]
     pub value: Vec<u8>,
-    pub session: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub session: Option<String>,
 }
 
 fn base64_decode<'de, D>(deserializer: D) -> std::result::Result<Vec<u8>, D::Error>
@@ -236,7 +237,11 @@ impl Kv for Client {
     /// https://www.consul.io/api/kv.html#create-update-key
     fn acquire(&self, kv: &KvPair, options: Option<&AcquireOptions>) -> Result<bool> {
         let mut params: HashMap<String, String> = HashMap::new();
-        params.insert(String::from("acquire"), kv.session.to_string());
+        if let Some(session) = &kv.session {
+            params.insert(String::from("acquire"), session.to_string());
+        } else {
+            Err(ErrorKind::MissingSessionFlag)?
+        }
         params.insert(String::from("flags"), kv.flags.to_string());
         if let Some(dc) = options
             .and_then(|o| o.dc.as_ref())
@@ -256,7 +261,11 @@ impl Kv for Client {
     /// https://www.consul.io/api/kv.html#create-update-key
     fn release(&self, kv: &KvPair, options: Option<&ReleaseOptions>) -> Result<bool> {
         let mut params: HashMap<String, String> = HashMap::new();
-        params.insert(String::from("release"), kv.session.to_string());
+        if let Some(session) = &kv.session {
+            params.insert(String::from("release"), session.to_string());
+        } else {
+            Err(ErrorKind::MissingSessionFlag)?
+        }
         params.insert(String::from("flags"), kv.flags.to_string());
         if let Some(dc) = options
             .and_then(|o| o.dc.as_ref())
