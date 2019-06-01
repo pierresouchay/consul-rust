@@ -4,8 +4,6 @@ use std::io::Read;
 use error::ConsulResult;
 use std::string::String;
 
-type Error = Box<dyn std::error::Error>;
-
 #[derive(Debug)]
 pub struct Handler {
     client: Client,
