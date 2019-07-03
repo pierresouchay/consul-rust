@@ -31,5 +31,5 @@ Simply include consul-rust in your Cargo dependencies.
 
 ```toml
 [dependencies]
-consul = "0.1"
+consul = "0.2.0"
 ```
