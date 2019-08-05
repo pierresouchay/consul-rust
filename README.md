@@ -31,5 +31,5 @@ Simply include the consul-rust in your Cargo dependencies.
 
 ```
 [dependencies]
-consul = "0.1"
+consul = "0.3"
 ```
