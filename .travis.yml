@@ -1,14 +1,10 @@
 language: rust
 rust:
-  - 1.21.0
   - stable
-  - nightly
 before_install:
-  - curl -L -o /tmp/consul.zip https://releases.hashicorp.com/consul/0.6.4/consul_0.6.4_linux_amd64.zip
+  - curl -L -o /tmp/consul.zip https://releases.hashicorp.com/consul/1.5.3/consul_1.5.3_linux_amd64.zip
   - unzip /tmp/consul.zip
   - ./consul agent -config-file data/consul-test.json > /tmp/consul.log &
 script:
-  - cargo build -v
-  - sh data/register.sh
-  - cargo test -v
-  - cargo doc -v
+  - cargo build
+  - RUST_TEST_TASKS=1 cargo test

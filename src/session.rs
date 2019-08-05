@@ -1,71 +1,109 @@
-#![allow(non_snake_case)]
+use std::collections::HashMap;
 
-use serde_json;
-use std::thread;
-use std::time::Duration;
+use crate::errors::Result;
+use crate::request::{get, put};
+use crate::{Client, QueryMeta, QueryOptions, WriteMeta, WriteOptions};
 
-use request::Handler;
-use error::ConsulResult;
-use std::error::Error;
-
-pub const SESSION_TTL: &'static str = "15s";
-
-#[derive(Serialize, Deserialize, Debug)]
-pub struct SessionCreate {
-    Name: String,
-    TTL: String
-}
-
-#[derive(Serialize, Deserialize, Debug)]
+#[serde(default)]
+#[derive(Clone, Default, Eq, PartialEq, Serialize, Deserialize, Debug)]
 pub struct SessionID {
-    ID: String
+    pub ID: String,
 }
 
-pub struct Session {
-    handler: Handler
+#[serde(default)]
+#[derive(Clone, Default, Eq, PartialEq, Serialize, Deserialize, Debug)]
+pub struct SessionEntry {
+    pub CreateIndex: Option<u64>,
+    pub ID: Option<String>,
+    pub Name: Option<String>,
+    pub Node: Option<String>,
+    pub LockDelay: Option<u64>, //TODO: Change this to a Durations
+    pub Behavior: Option<String>,
+    pub Checks: Option<Vec<String>>,
+    pub TTL: Option<String>,
 }
 
-impl Session {
-    pub fn new(address: &str) ->  Session {
-        Session {
-            handler: Handler::new(&format!("{}/v1/session", address))
-        }
+pub trait Session {
+    fn create(
+        &self,
+        session: &SessionEntry,
+        options: Option<&WriteOptions>,
+    ) -> Result<(SessionEntry, WriteMeta)>;
+    fn destroy(&self, id: &str, options: Option<&WriteOptions>) -> Result<(bool, WriteMeta)>;
+    fn info(
+        &self,
+        id: &str,
+        options: Option<&QueryOptions>,
+    ) -> Result<(Vec<SessionEntry>, QueryMeta)>;
+    fn list(&self, options: Option<&QueryOptions>) -> Result<(Vec<SessionEntry>, QueryMeta)>;
+    fn node(
+        &self,
+        node: &str,
+        options: Option<&QueryOptions>,
+    ) -> Result<(Vec<SessionEntry>, QueryMeta)>;
+    fn renew(
+        &self,
+        id: &str,
+        options: Option<&WriteOptions>,
+    ) -> Result<(Vec<SessionEntry>, WriteMeta)>;
+}
+
+impl Session for Client {
+    fn create(
+        &self,
+        session: &SessionEntry,
+        options: Option<&WriteOptions>,
+    ) -> Result<(SessionEntry, WriteMeta)> {
+        put(
+            "/v1/session/create",
+            Some(session),
+            &self.config,
+            HashMap::new(),
+            options,
+        )
+    }
+    fn destroy(&self, id: &str, options: Option<&WriteOptions>) -> Result<(bool, WriteMeta)> {
+        let path = format!("/v1/session/destroy/{}", id);
+        put(
+            &path,
+            None as Option<&()>,
+            &self.config,
+            HashMap::new(),
+            options,
+        )
+    }
+    fn info(
+        &self,
+        id: &str,
+        options: Option<&QueryOptions>,
+    ) -> Result<(Vec<SessionEntry>, QueryMeta)> {
+        let path = format!("/v1/session/info/{}", id);
+        get(&path, &self.config, HashMap::new(), options)
+    }
+    fn list(&self, options: Option<&QueryOptions>) -> Result<(Vec<SessionEntry>, QueryMeta)> {
+        get("/v1/session/list", &self.config, HashMap::new(), options)
+    }
+    fn node(
+        &self,
+        node: &str,
+        options: Option<&QueryOptions>,
+    ) -> Result<(Vec<SessionEntry>, QueryMeta)> {
+        let path = format!("/v1/session/node/{}", node);
+        get(&path, &self.config, HashMap::new(), options)
     }
 
-    pub fn create(&self, name: String) -> ConsulResult<Option<String>> {
-        let session = SessionCreate {
-            Name: name,
-            TTL: self::SESSION_TTL.to_owned()
-        };
-        let json_str = serde_json::to_string(&session)
-            .map_err(|e| e.description().to_owned())?;
-
-        let result = self.handler.put("create", json_str, Some("application/json"))?;
-
-        let json_data = serde_json::from_str(&result)
-            .map_err(|e| e.description().to_owned())?;
-        Ok(super::get_string(&json_data, &["ID"]))
+    fn renew(
+        &self,
+        id: &str,
+        options: Option<&WriteOptions>,
+    ) -> Result<(Vec<SessionEntry>, WriteMeta)> {
+        let path = format!("/v1/session/renew/{}", id);
+        put(
+            &path,
+            None as Option<&()>,
+            &self.config,
+            HashMap::new(),
+            options,
+        )
     }
-
-    pub fn renew(&self, session_id: &String) -> ConsulResult<bool> {
-        for _ in 0..10 {
-            let uri = format!("renew/{}", session_id);
-            match self.handler.put(&uri, "".to_owned(), Some("application/json")) {
-                Ok(_) => return Ok(true),
-                Err(e) => {
-                    println!("Could not renew session: {}, returned error: {}. Sleeping for 2 seconds", session_id, e);
-                    thread::sleep(Duration::from_millis(2000u64));
-                }
-            };
-        }
-        Err(format!("Could not renew session: {} after 10 tries.", session_id))
-    }
-
-    pub fn end(&self, session_id: &String) -> ConsulResult<()> {
-        let uri = format!("destroy/{}", session_id);
-        self.handler.put(&uri, "".to_owned(), Some("application/json"))?;
-        Ok(())
-    }
-
-
 }

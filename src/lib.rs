@@ -1,85 +1,84 @@
-//! Rust client libray for [Consul](http://consul.io/) HTTP API
-//!
-//! # Usage
-//!
-//! This crate is [on crates.io](https://crates.io/crates/consul) and
-//! can be used by adding `consul` to the dependencies in your
-//! project's `Cargo.toml`.
-//!
-//! ```toml
-//! [dependencies]
-//! consul = "*"
-//! ```
-//!
-//! and this to your crate root:
-//!
-//! ```rust
-//! extern crate consul;
-//! ```
-//! # Examples
-//! ```rust
-//! use std::collections::HashMap;
-//! use consul::{Client, Service};
-//!
-//! let client = Client::new("http://127.0.0.1:8500");
-//! let services: HashMap<String, Service> = client.agent.services().unwrap();
-//! println!("{:?}", services);
-//! ```
-//!
-
-#![crate_name = "consul"]
-#![crate_type = "lib"]
+#![allow(non_snake_case)]
+#![allow(unused_doc_comments)]
 
 #[macro_use]
+extern crate error_chain;
+#[macro_use]
 extern crate serde_derive;
-extern crate serde;
-extern crate serde_json;
-extern crate hyper;
-extern crate openssl;
-extern crate hyper_openssl;
 
-/// public api
-pub use agent::{Agent, AgentMember};
-pub use catalog::{Catalog, ServiceNode};
-pub use health::Health;
-pub use client::Client;
-pub use keystore::Keystore;
-pub use session::Session;
-pub use structs::{Node, Service, HealthService, RegisterService, TtlHealthCheck};
 
-mod agent;
-mod catalog;
-mod structs;
-mod health;
-mod client;
-mod session;
-mod keystore;
+pub mod agent;
+pub mod catalog;
+pub mod connect_ca;
+pub mod errors;
+pub mod health;
+pub mod kv;
+pub mod session;
+
 mod request;
-mod error;
 
-use serde_json::Value;
-pub use error::ConsulResult;
+use std::time::Duration;
 
-#[inline]
-pub fn get_string(json_data: &Value, path: &[&str]) -> Option<String> {
-    let mut pointer_str = String::new();
-    for entry in path.iter() {
-        pointer_str = format!("{}/{}", pointer_str, entry);
-    }
 
-    json_data.pointer(&pointer_str)
-        .and_then(|value| {
-            value.as_str()
-                .and_then(|value| Some(value.to_owned()))
-        })
+use reqwest::ClientBuilder;
+use reqwest::Client as HttpClient;
+
+use errors::{Result, ResultExt};
+
+
+
+#[derive(Clone, Debug)]
+pub struct Client {
+    config: Config,
 }
 
-#[inline]
-pub fn find_path<'a>(json_data: &'a Value, path: &[&str]) -> Option<&'a Value> {
-    let mut pointer_str = String::new();
-    for entry in path.iter() {
-        pointer_str = format!("{}/{}", pointer_str, entry);
+impl Client {
+    pub fn new(config: Config) -> Self {
+        Client { config: config }
     }
+}
 
-    json_data.pointer(&pointer_str)
+#[derive(Clone, Debug)]
+pub struct Config {
+    pub address: String,
+    pub datacenter: Option<String>,
+    pub http_client: HttpClient,
+    pub wait_time: Option<Duration>,
+}
+
+impl Config {
+    pub fn new() -> Result<Config> {
+       ClientBuilder::new()
+            .build()
+            .chain_err(|| "Failed to build reqwest client")
+            .map(|client| Config {
+                address: String::from("http://localhost:8500"),
+                datacenter: None,
+                http_client: client,
+                wait_time: None,
+            })
+    }
+}
+
+#[derive(Clone, Debug, Default)]
+pub struct QueryOptions {
+    pub datacenter: Option<String>,
+    pub wait_index: Option<u64>,
+    pub wait_time: Option<Duration>,
+}
+
+#[derive(Clone, Debug)]
+pub struct QueryMeta {
+    pub last_index: Option<u64>,
+    pub request_time: Duration,
+}
+
+#[derive(Clone, Debug, Default)]
+pub struct WriteOptions {
+    pub datacenter: Option<String>,
+}
+
+#[derive(Clone, Debug)]
+pub struct WriteMeta {
+    pub request_time: Duration,
 }
