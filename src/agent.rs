@@ -1,9 +1,9 @@
 use std::collections::HashMap;
 
-use request::{get, put};
 
-use Client;
-use errors::Result;
+use crate::Client;
+use crate::errors::Result;
+use crate::request::{get, put};
 
 #[serde(default)]
 #[derive(Clone, Default, Eq, PartialEq, Serialize, Deserialize, Debug)]
@@ -59,7 +59,6 @@ pub trait Agent {
     fn force_leave(&self) -> Result<()>;
 }
 
-
 impl Agent for Client {
     /// https://www.consul.io/api/agent/check.html#list-checks
     fn checks(&self) -> Result<HashMap<String, AgentCheck>> {
@@ -81,7 +80,8 @@ impl Agent for Client {
             &self.config,
             HashMap::new(),
             None,
-        ).map(|x| x.0)
+        )
+        .map(|x| x.0)
     }
 
     /// https://www.consul.io/api/agent.html#reload-agent
@@ -102,8 +102,8 @@ impl Agent for Client {
             &self.config,
             params,
             None,
-        ).map(|x| x.0)
-
+        )
+        .map(|x| x.0)
     }
     ///https://www.consul.io/api/agent.html#join-agent
     fn join(&self, address: &str, wan: bool) -> Result<()> {
@@ -124,7 +124,8 @@ impl Agent for Client {
             &self.config,
             HashMap::new(),
             None,
-        ).map(|x| x.0)
+        )
+        .map(|x| x.0)
     }
 
     ///https://www.consul.io/api/agent.html#force-leave-and-shutdown
@@ -135,6 +136,7 @@ impl Agent for Client {
             &self.config,
             HashMap::new(),
             None,
-        ).map(|x| x.0)
+        )
+        .map(|x| x.0)
     }
 }

@@ -1,17 +1,15 @@
 #![allow(non_snake_case)]
 #![allow(unused_doc_comments)]
 
-
 #[macro_use]
 extern crate error_chain;
-extern crate reqwest;
 #[macro_use]
 extern crate serde_derive;
-extern crate serde;
-extern crate url;
+
 
 pub mod agent;
 pub mod catalog;
+pub mod connect_ca;
 pub mod errors;
 pub mod health;
 pub mod kv;
@@ -21,11 +19,13 @@ mod request;
 
 use std::time::Duration;
 
+
 use reqwest::ClientBuilder;
 use reqwest::Client as HttpClient;
 
-use errors::Result;
-use errors::ResultExt;
+use errors::{Result, ResultExt};
+
+
 
 #[derive(Clone, Debug)]
 pub struct Client {
@@ -48,21 +48,17 @@ pub struct Config {
 
 impl Config {
     pub fn new() -> Result<Config> {
-        ClientBuilder::new()
+       ClientBuilder::new()
             .build()
             .chain_err(|| "Failed to build reqwest client")
-            .map(|client| {
-                Config {
-                    address: String::from("http://localhost:8500"),
-                    datacenter: None,
-                    http_client: client,
-                    wait_time: None,
-                }
+            .map(|client| Config {
+                address: String::from("http://localhost:8500"),
+                datacenter: None,
+                http_client: client,
+                wait_time: None,
             })
     }
 }
-
-
 
 #[derive(Clone, Debug, Default)]
 pub struct QueryOptions {
@@ -70,8 +66,6 @@ pub struct QueryOptions {
     pub wait_index: Option<u64>,
     pub wait_time: Option<Duration>,
 }
-
-
 
 #[derive(Clone, Debug)]
 pub struct QueryMeta {

@@ -2,6 +2,7 @@
 
 name = "consul"
 version = "0.3.0"
+edition = "2018"
 authors = ["Andrew Useckas <andrew.useckas@threat-x.com>", "Stu Small <stuart.small@threat-x.com>", "YoungKing <yanckin@gmail.com>"]
 description = "Rust client libray for Consul HTTP API"
 documentation = "https://docs.rs/consul/"
@@ -14,8 +15,9 @@ keywords = ["consul", "discovery"]
 
 
 [dependencies]
-error-chain = "^0.12"
+error-chain = "0.12"
 serde = "1"
 serde_derive = "1"
-reqwest = {version="^0.9", features=["default-tls"]}
+serde_json = "1.0"
+reqwest = "0.9"
 url = "1.5"

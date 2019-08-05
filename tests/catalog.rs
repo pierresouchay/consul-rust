@@ -1,7 +1,6 @@
-
 extern crate consul;
-use consul::{Client, Config};
 use consul::catalog::Catalog;
+use consul::{Client, Config};
 
 #[test]
 fn ds_test() {

@@ -1,10 +1,9 @@
 use std::collections::HashMap;
 
-use {Client, QueryOptions, QueryMeta, WriteOptions, WriteMeta};
-use errors::Error;
-use errors::Result;
-use request::{delete, get, get_vec, put};
-
+use crate::errors::Error;
+use crate::errors::Result;
+use crate::request::{delete, get, get_vec, put};
+use crate::{Client, QueryMeta, QueryOptions, WriteMeta, WriteOptions};
 
 #[serde(default)]
 #[derive(Clone, Default, Eq, PartialEq, Serialize, Deserialize, Debug)]
@@ -19,12 +18,12 @@ pub struct KVPair {
 }
 
 pub trait KV {
-    fn acquire(&self, &KVPair, Option<&WriteOptions>) -> Result<(bool, WriteMeta)>;
-    fn delete(&self, key: &str, Option<&WriteOptions>) -> Result<(bool, WriteMeta)>;
-    fn get(&self, &str, Option<&QueryOptions>) -> Result<(Option<KVPair>, QueryMeta)>;
-    fn list(&self, &str, Option<&QueryOptions>) -> Result<(Vec<KVPair>, QueryMeta)>;
-    fn put(&self, &KVPair, Option<&WriteOptions>) -> Result<(bool, WriteMeta)>;
-    fn release(&self, &KVPair, Option<&WriteOptions>) -> Result<(bool, WriteMeta)>;
+    fn acquire(&self, _: &KVPair, _: Option<&WriteOptions>) -> Result<(bool, WriteMeta)>;
+    fn delete(&self, _ : &str, _: Option<&WriteOptions>) -> Result<(bool, WriteMeta)>;
+    fn get(&self, _: &str, _: Option<&QueryOptions>) -> Result<(Option<KVPair>, QueryMeta)>;
+    fn list(&self, _: &str, _: Option<&QueryOptions>) -> Result<(Vec<KVPair>, QueryMeta)>;
+    fn put(&self, _: &KVPair, _: Option<&WriteOptions>) -> Result<(bool, WriteMeta)>;
+    fn release(&self, _: &KVPair, _: Option<&WriteOptions>) -> Result<(bool, WriteMeta)>;
 }
 
 impl KV for Client {

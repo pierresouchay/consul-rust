@@ -1,6 +1,6 @@
 extern crate consul;
-use consul::{Client, Config};
 use consul::session::SessionEntry;
+use consul::{Client, Config};
 
 #[test]
 fn session_test() {

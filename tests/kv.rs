@@ -1,7 +1,6 @@
-
 extern crate consul;
-use consul::{Client, Config};
 use consul::kv::KVPair;
+use consul::{Client, Config};
 
 #[test]
 fn kv_test() {
