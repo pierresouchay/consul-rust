@@ -2,7 +2,7 @@ language: rust
 rust:
   - stable
 before_install:
-  - curl -L -o /tmp/consul.zip https://releases.hashicorp.com/consul/0.9.0/consul_0.9.0_linux_amd64.zip
+  - curl -L -o /tmp/consul.zip https://releases.hashicorp.com/consul/1.5.3/consul_1.5.3_linux_amd64.zip
   - unzip /tmp/consul.zip
   - ./consul agent -config-file data/consul-test.json > /tmp/consul.log &
 script:
