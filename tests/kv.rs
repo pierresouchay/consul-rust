@@ -12,7 +12,7 @@ fn kv_test() {
 
     let pair = KVPair {
         Key: String::from("testkey"),
-        Value: String::from("testvalue"),
+        Value: Some(String::from("testvalue")),
         ..Default::default()
     };
 
