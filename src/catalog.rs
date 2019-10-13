@@ -90,7 +90,7 @@ pub trait Catalog {
     ) -> Result<((), WriteMeta)>;
     fn datacenters(&self) -> Result<(Vec<String>, QueryMeta)>;
     fn nodes(&self, q: Option<&QueryOptions>) -> Result<(Vec<Node>, QueryMeta)>;
-    fn services(&self, q: Option<&QueryOptions>) -> Result<(HashMap<String, String>, QueryMeta)>;
+    fn services(&self, q: Option<&QueryOptions>) -> Result<(HashMap<String, Vec<String>>, QueryMeta)>;
 }
 
 impl Catalog for Client {
@@ -139,7 +139,7 @@ impl Catalog for Client {
         get("/v1/catalog/nodes", &self.config, HashMap::new(), q)
     }
 
-    fn services(&self, q: Option<&QueryOptions>) -> Result<(HashMap<String, String>, QueryMeta)> {
+    fn services(&self, q: Option<&QueryOptions>) -> Result<(HashMap<String, Vec<String>>, QueryMeta)> {
         get("/v1/catalog/services", &self.config, HashMap::new(), q)
     }
 }
