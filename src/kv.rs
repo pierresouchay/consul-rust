@@ -13,8 +13,37 @@ pub struct KVPair {
     pub ModifyIndex: Option<u64>,
     pub LockIndex: Option<u64>,
     pub Flags: Option<u64>,
+    #[serde(deserialize_with = "base64_decode")]
     pub Value: serde_json::Value,
     pub Session: Option<String>,
+}
+
+fn base64_decode<'de, D>(deserializer: D) -> std::result::Result<serde_json::Value, D::Error>
+where
+    D: serde::de::Deserializer<'de>,
+{
+    struct JsonStringVisitor;
+
+    impl<'de> serde::de::Visitor<'de> for JsonStringVisitor {
+        type Value = serde_json::Value;
+
+        fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+            formatter.write_str("a base64 encoded string containing json data")
+        }
+
+        fn visit_str<E>(self, v: &str) -> std::result::Result<Self::Value, E>
+        where
+            E: serde::de::Error,
+        {
+            let bytes: Vec<u8> = base64::decode(&v).map_err(E::custom)?;
+            serde_json::from_slice::<Self::Value>(&bytes).or_else(|_| {
+                let s = std::str::from_utf8(&bytes).map_err(E::custom)?;
+                Ok(Self::Value::String(s.to_owned()))
+            })
+        }
+    }
+
+    deserializer.deserialize_any(JsonStringVisitor)
 }
 
 pub trait KV {

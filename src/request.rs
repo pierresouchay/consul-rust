@@ -12,8 +12,8 @@ use reqwest::StatusCode;
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 
-use crate::{Config, QueryMeta, QueryOptions, WriteMeta, WriteOptions};
 use crate::errors::{Result, ResultExt};
+use crate::{Config, QueryMeta, QueryOptions, WriteMeta, WriteOptions};
 
 pub fn get_vec<R: DeserializeOwned>(
     path: &str,
@@ -46,6 +46,7 @@ pub fn get_vec<R: DeserializeOwned>(
         .chain_err(|| "HTTP request to consul failed")
         .and_then(|mut r| {
             let j = if r.status() != StatusCode::NOT_FOUND {
+                println!("{:?}", r);
                 r.json().chain_err(|| "Failed to parse JSON response")?
             } else {
                 Vec::new()

@@ -13,11 +13,16 @@ fn kv_test() {
 
     let pair = KVPair {
         Key: String::from("testkey"),
-        Value: Value::String(String::from("testvalue")),
+        Value: Value::from(6),
         ..Default::default()
     };
 
     assert!(client.put(&pair, None).unwrap().0);
+
+    assert_eq!(
+        Value::from(6),
+        client.get("testkey", None).unwrap().0.unwrap().Value
+    );
 
     let r = client.list("t", None).unwrap();
     assert!(!r.0.is_empty());
