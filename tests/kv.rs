@@ -1,6 +1,7 @@
 extern crate consul;
 use consul::kv::KVPair;
 use consul::{Client, Config};
+use serde_json::Value;
 
 #[test]
 fn kv_test() {
@@ -12,7 +13,7 @@ fn kv_test() {
 
     let pair = KVPair {
         Key: String::from("testkey"),
-        Value: Some(String::from("testvalue")),
+        Value: Value::String(String::from("testvalue")),
         ..Default::default()
     };
 

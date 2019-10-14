@@ -6,20 +6,20 @@ use crate::request::{delete, get, get_vec, put};
 use crate::{Client, QueryMeta, QueryOptions, WriteMeta, WriteOptions};
 
 #[serde(default)]
-#[derive(Clone, Default, Eq, PartialEq, Serialize, Deserialize, Debug)]
+#[derive(Clone, Default, PartialEq, Serialize, Deserialize, Debug)]
 pub struct KVPair {
     pub Key: String,
     pub CreateIndex: Option<u64>,
     pub ModifyIndex: Option<u64>,
     pub LockIndex: Option<u64>,
     pub Flags: Option<u64>,
-    pub Value: Option<String>,
+    pub Value: serde_json::Value,
     pub Session: Option<String>,
 }
 
 pub trait KV {
     fn acquire(&self, _: &KVPair, _: Option<&WriteOptions>) -> Result<(bool, WriteMeta)>;
-    fn delete(&self, _ : &str, _: Option<&WriteOptions>) -> Result<(bool, WriteMeta)>;
+    fn delete(&self, _: &str, _: Option<&WriteOptions>) -> Result<(bool, WriteMeta)>;
     fn get(&self, _: &str, _: Option<&QueryOptions>) -> Result<(Option<KVPair>, QueryMeta)>;
     fn list(&self, _: &str, _: Option<&QueryOptions>) -> Result<(Vec<KVPair>, QueryMeta)>;
     fn put(&self, _: &KVPair, _: Option<&WriteOptions>) -> Result<(bool, WriteMeta)>;
