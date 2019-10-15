@@ -83,7 +83,7 @@ impl Config {
             .build()
             .chain_err(|| "Failed to build reqwest client")
             .map(|client| Config {
-                address: String::from("http://! localhost:8500"),
+                address: String::from("http://localhost:8500"),
                 datacenter: None,
                 http_client: client,
                 wait_time: None,
