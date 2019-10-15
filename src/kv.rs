@@ -2,8 +2,12 @@ use std::collections::HashMap;
 
 use crate::errors::Error;
 use crate::errors::Result;
-use crate::request::{delete, get, get_vec, put};
+use crate::request::{delete, get, get_vec, put_data};
 use crate::{Client, QueryMeta, QueryOptions, WriteMeta, WriteOptions};
+
+use base64::STANDARD;
+
+base64_serde_type!(Base64Standard, STANDARD);
 
 #[serde(default)]
 #[derive(Clone, Default, PartialEq, Serialize, Deserialize, Debug)]
@@ -13,50 +17,22 @@ pub struct KVPair {
     pub ModifyIndex: Option<u64>,
     pub LockIndex: Option<u64>,
     pub Flags: Option<u64>,
-    #[serde(deserialize_with = "base64_decode")]
-    pub Value: serde_json::Value,
+    #[serde(with = "Base64Standard")]
+    pub Value: Vec<u8>,
     pub Session: Option<String>,
 }
 
-fn base64_decode<'de, D>(deserializer: D) -> std::result::Result<serde_json::Value, D::Error>
-where
-    D: serde::de::Deserializer<'de>,
-{
-    struct JsonStringVisitor;
-
-    impl<'de> serde::de::Visitor<'de> for JsonStringVisitor {
-        type Value = serde_json::Value;
-
-        fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
-            formatter.write_str("a base64 encoded string containing json data")
-        }
-
-        fn visit_str<E>(self, v: &str) -> std::result::Result<Self::Value, E>
-        where
-            E: serde::de::Error,
-        {
-            let bytes: Vec<u8> = base64::decode(&v).map_err(E::custom)?;
-            serde_json::from_slice::<Self::Value>(&bytes).or_else(|_| {
-                let s = std::str::from_utf8(&bytes).map_err(E::custom)?;
-                Ok(Self::Value::String(s.to_owned()))
-            })
-        }
-    }
-
-    deserializer.deserialize_any(JsonStringVisitor)
-}
-
 pub trait KV {
-    fn acquire(&self, _: &KVPair, _: Option<&WriteOptions>) -> Result<(bool, WriteMeta)>;
+    fn acquire(&self, _: KVPair, _: Option<&WriteOptions>) -> Result<(bool, WriteMeta)>;
     fn delete(&self, _: &str, _: Option<&WriteOptions>) -> Result<(bool, WriteMeta)>;
     fn get(&self, _: &str, _: Option<&QueryOptions>) -> Result<(Option<KVPair>, QueryMeta)>;
     fn list(&self, _: &str, _: Option<&QueryOptions>) -> Result<(Vec<KVPair>, QueryMeta)>;
-    fn put(&self, _: &KVPair, _: Option<&WriteOptions>) -> Result<(bool, WriteMeta)>;
-    fn release(&self, _: &KVPair, _: Option<&WriteOptions>) -> Result<(bool, WriteMeta)>;
+    fn put(&self, _: KVPair, _: Option<&WriteOptions>) -> Result<(bool, WriteMeta)>;
+    fn release(&self, _: KVPair, _: Option<&WriteOptions>) -> Result<(bool, WriteMeta)>;
 }
 
 impl KV for Client {
-    fn acquire(&self, pair: &KVPair, o: Option<&WriteOptions>) -> Result<(bool, WriteMeta)> {
+    fn acquire(&self, pair: KVPair, o: Option<&WriteOptions>) -> Result<(bool, WriteMeta)> {
         let mut params = HashMap::new();
         if let Some(i) = pair.Flags {
             if i != 0 {
@@ -66,7 +42,7 @@ impl KV for Client {
         if let Some(ref session) = pair.Session {
             params.insert(String::from("acquire"), session.to_owned());
             let path = format!("/v1/kv/{}", pair.Key);
-            put(&path, Some(&pair.Value), &self.config, params, o)
+            put_data(&path, Some(pair.Value), &self.config, params, o)
         } else {
             Err(Error::from("Session flag is required to acquire lock"))
         }
@@ -93,7 +69,7 @@ impl KV for Client {
         get_vec(&path, &self.config, params, o)
     }
 
-    fn put(&self, pair: &KVPair, o: Option<&WriteOptions>) -> Result<(bool, WriteMeta)> {
+    fn put(&self, pair: KVPair, o: Option<&WriteOptions>) -> Result<(bool, WriteMeta)> {
         let mut params = HashMap::new();
         if let Some(i) = pair.Flags {
             if i != 0 {
@@ -101,10 +77,10 @@ impl KV for Client {
             }
         }
         let path = format!("/v1/kv/{}", pair.Key);
-        put(&path, Some(&pair.Value), &self.config, params, o)
+        put_data(&path, Some(pair.Value), &self.config, params, o)
     }
 
-    fn release(&self, pair: &KVPair, o: Option<&WriteOptions>) -> Result<(bool, WriteMeta)> {
+    fn release(&self, pair: KVPair, o: Option<&WriteOptions>) -> Result<(bool, WriteMeta)> {
         let mut params = HashMap::new();
         if let Some(i) = pair.Flags {
             if i != 0 {
@@ -114,7 +90,7 @@ impl KV for Client {
         if let Some(ref session) = pair.Session {
             params.insert(String::from("release"), session.to_owned());
             let path = format!("/v1/kv/{}", pair.Key);
-            put(&path, Some(&pair.Value), &self.config, params, o)
+            put_data(&path, Some(pair.Value), &self.config, params, o)
         } else {
             Err(Error::from("Session flag is required to release a lock"))
         }
