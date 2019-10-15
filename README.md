@@ -9,17 +9,34 @@ Rust client libray for [Consul](http://consul.io/) HTTP API
 
 ### Usage
 
-```
-    extern crate consul;
+```rust
+#![allow(unused_must_use)]
 
-    use std::collections::HashMap;
-    use consul::Client;
+use consul::Client;
+use consul::Config;
+use consul::catalog::Catalog;
 
-    fn main(){
-        let client = Client::new("http://127.0.0.1:8500");
-        let services: HashMap<String, Vec<String>> = client.catalog.services().unwrap();
-        println!("{:?}", services);
-    }
+fn main(){
+    let mut config = Config::new().unwrap();
+    config.address = String::from("http://localhost:8500");
+    let client = Client::new(config);
+    let nodes = client.nodes(None);
+    nodes.map(|(nodes, _)|{
+        println!("nodes: {:?}", nodes);
+       for node in nodes.iter() {
+           println!("node {}: {:?}", node.ID, client.node(node.ID.as_str(), None));
+       }
+    });
+
+    let res = client.services(None);
+    res.map(|(m, _)|{
+        println!("services: {:?}", m);
+        for key in m.keys() {
+            let service = client.service(key.as_str(), None);
+            println!("service {}: {:?}", key, service);
+        }
+    });
+}
 ```
 
 
@@ -31,5 +48,5 @@ Simply include the consul-rust in your Cargo dependencies.
 
 ```
 [dependencies]
-consul = "0.3"
+consul = "0.4"
 ```

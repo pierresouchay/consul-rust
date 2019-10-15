@@ -41,7 +41,7 @@ pub struct ServiceEntry {
 }
 
 pub trait Health {
-    fn service(
+    fn check_service(
         &self,
         service: &str,
         tag: Option<&str>,
@@ -51,7 +51,7 @@ pub trait Health {
 }
 
 impl Health for Client {
-    fn service(
+    fn check_service(
         &self,
         service: &str,
         tag: Option<&str>,

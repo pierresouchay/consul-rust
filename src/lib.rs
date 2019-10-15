@@ -1,6 +1,37 @@
 #![allow(non_snake_case)]
 #![allow(unused_doc_comments)]
 
+//! # consul-rust
+//! ```rust
+//! #![allow(unused_must_use)]
+//! use consul::Client;
+//! use consul::Config;
+//! use consul::catalog::Catalog;
+//! 
+//! fn main(){
+//!     let mut config = Config::new().unwrap();
+//!     config.address = String::from("http://localhost:8500");
+//!     let client = Client::new(config);
+//!     let nodes = client.nodes(None);
+//!     nodes.map(|(nodes, _)|{
+//!         println!("nodes: {:?}", nodes);
+//!         for node in nodes.iter() {
+//!             println!("node {}: {:?}", node.ID, client.node(node.ID.as_str(), None));
+//!         }
+//!     });
+//! 
+//!     let res = client.services(None);
+//!     res.map(|(m, _)|{
+//!         println!("services: {:?}", m);
+//!         for key in m.keys() {
+//!             let service = client.service(key.as_str(), None);
+//!             println!("service {}: {:?}", key, service);
+//!         }
+//!     });
+//! }
+//! ```
+
+
 #[macro_use]
 extern crate error_chain;
 #[macro_use]
