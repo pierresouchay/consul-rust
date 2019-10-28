@@ -9,16 +9,18 @@ use base64::STANDARD;
 
 base64_serde_type!(Base64Standard, STANDARD);
 
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Default)]
+pub struct Value(#[serde(with = "Base64Standard")] pub Vec<u8>);
+
 #[serde(default)]
-#[derive(Clone, Default, PartialEq, Serialize, Deserialize, Debug)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Default)]
 pub struct KVPair {
     pub Key: String,
     pub CreateIndex: Option<u64>,
     pub ModifyIndex: Option<u64>,
     pub LockIndex: Option<u64>,
     pub Flags: Option<u64>,
-    #[serde(with = "Base64Standard")]
-    pub Value: Vec<u8>,
+    pub Value: Option<Value>,
     pub Session: Option<String>,
 }
 
@@ -42,7 +44,7 @@ impl KV for Client {
         if let Some(ref session) = pair.Session {
             params.insert(String::from("acquire"), session.to_owned());
             let path = format!("/v1/kv/{}", pair.Key);
-            put_data(&path, Some(pair.Value), &self.config, params, o)
+            put_data(&path, pair.Value.map(|x| x.0), &self.config, params, o)
         } else {
             Err(Error::from("Session flag is required to acquire lock"))
         }
@@ -77,7 +79,7 @@ impl KV for Client {
             }
         }
         let path = format!("/v1/kv/{}", pair.Key);
-        put_data(&path, Some(pair.Value), &self.config, params, o)
+        put_data(&path, pair.Value.map(|x| x.0), &self.config, params, o)
     }
 
     fn release(&self, pair: KVPair, o: Option<&WriteOptions>) -> Result<(bool, WriteMeta)> {
@@ -90,7 +92,7 @@ impl KV for Client {
         if let Some(ref session) = pair.Session {
             params.insert(String::from("release"), session.to_owned());
             let path = format!("/v1/kv/{}", pair.Key);
-            put_data(&path, Some(pair.Value), &self.config, params, o)
+            put_data(&path, pair.Value.map(|x| x.0), &self.config, params, o)
         } else {
             Err(Error::from("Session flag is required to release a lock"))
         }
