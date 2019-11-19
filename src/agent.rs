@@ -121,7 +121,7 @@ pub struct AgentServiceRegistration {
     pub meta: Option<HashMap<String, String>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub weights: Option<AgentWeights>,
-    pub check: AgentServiceCheck,
+    pub check: Option<AgentServiceCheck>,
     pub checks: AgentServiceChecks,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub proxy: Option<AgentServiceConnectProxyConfig>,
