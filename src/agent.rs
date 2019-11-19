@@ -3,7 +3,8 @@ use std::fmt;
 
 use error::*;
 use health::HealthCheckDefinition;
-use request::{Method, Request, StatusCode};
+use request::{Method, Request};
+use response::ResponseHelper;
 
 use Client;
 
@@ -396,29 +397,23 @@ impl Agent for Client {
                 params.insert(String::from("segment"), segment.to_string());
             }
         }
-        let mut r = Request::new_with_params(&self, Method::GET, "agent/members", params).send()?;
-        if r.status() != StatusCode::OK {
-            Err(ErrorKind::UnexpectedResponse(r.text()?))?
-        }
-        Ok(r.json().context(ErrorKind::InvalidResponse)?)
+        Request::new_with_params(&self, Method::GET, "agent/members", params)
+            .send()?
+            .parse_json()
     }
 
     /// https://www.consul.io/api/agent.html#read-configuration
     fn agent(&self) -> Result<AgentMember> {
-        let mut r = Request::new(&self, Method::GET, "agent/self").send()?;
-        if r.status() != StatusCode::OK {
-            Err(ErrorKind::UnexpectedResponse(r.text()?))?
-        }
-        Ok(r.json().context(ErrorKind::InvalidResponse)?)
+        Request::new(&self, Method::GET, "agent/self")
+            .send()?
+            .parse_json()
     }
 
     /// https://www.consul.io/api/agent.html#reload-agent
     fn reload(&self) -> Result<()> {
-        let mut r = Request::new(&self, Method::PUT, "agent/reload").send()?;
-        if r.status() != StatusCode::OK {
-            Err(ErrorKind::UnexpectedResponse(r.text()?))?
-        }
-        Ok(())
+        Request::new(&self, Method::PUT, "agent/reload")
+            .send()?
+            .parse()
     }
 
     /// https://www.consul.io/api/agent.html#enable-maintenance-mode
@@ -430,21 +425,16 @@ impl Agent for Client {
                 params.insert(String::from("reason"), reason.to_string());
             }
         }
-        let mut r =
-            Request::new_with_params(&self, Method::PUT, "agent/maintenance", params).send()?;
-        if r.status() != StatusCode::OK {
-            Err(ErrorKind::UnexpectedResponse(r.text()?))?
-        }
-        Ok(())
+        Request::new_with_params(&self, Method::PUT, "agent/maintenance", params)
+            .send()?
+            .parse()
     }
 
     /// https://www.consul.io/api/agent.html#view-metrics
     fn metrics(&self) -> Result<AgentMetrics> {
-        let mut r = Request::new(&self, Method::GET, "agent/metrics").send()?;
-        if r.status() != StatusCode::OK {
-            Err(ErrorKind::UnexpectedResponse(r.text()?))?
-        }
-        Ok(r.json().context(ErrorKind::InvalidResponse)?)
+        Request::new(&self, Method::GET, "agent/metrics")
+            .send()?
+            .parse_json()
     }
 
     /// https://www.consul.io/api/agent.html#join-agent
@@ -455,83 +445,64 @@ impl Agent for Client {
                 params.insert(String::from("wan"), wan.to_string());
             }
         }
-        let mut r = Request::new_with_params(
+        Request::new_with_params(
             &self,
             Method::PUT,
             &format!("agent/join/{}", address),
             params,
         )
-        .send()?;
-        if r.status() != StatusCode::OK {
-            Err(ErrorKind::UnexpectedResponse(r.text()?))?
-        }
-        Ok(())
+        .send()?
+        .parse()
     }
 
     /// https://www.consul.io/api/agent.html#graceful-leave-and-shutdown
     fn leave(&self) -> Result<()> {
-        let mut r = Request::new(&self, Method::PUT, "agent/leave").send()?;
-        if r.status() != StatusCode::OK {
-            Err(ErrorKind::UnexpectedResponse(r.text()?))?
-        }
-        Ok(())
+        Request::new(&self, Method::PUT, "agent/leave")
+            .send()?
+            .parse()
     }
 
     /// https://www.consul.io/api/agent.html#force-leave-and-shutdown
     fn force_leave(&self, node: &str) -> Result<()> {
-        let mut r =
-            Request::new(&self, Method::PUT, &format!("agent/force-leave/{}", node)).send()?;
-        if r.status() != StatusCode::OK {
-            Err(ErrorKind::UnexpectedResponse(r.text()?))?
-        }
-        Ok(())
+        Request::new(&self, Method::PUT, &format!("agent/force-leave/{}", node))
+            .send()?
+            .parse()
     }
 
     /// https://www.consul.io/api/agent.html#update-acl-tokens
     fn token(&self, token_type: TokenType, token: &str) -> Result<()> {
         let mut body: HashMap<String, String> = HashMap::new();
         body.insert(String::from("Token"), token.to_string());
-        let mut r = Request::new(&self, Method::PUT, &format!("agent/token/{}", token_type))
+        Request::new(&self, Method::PUT, &format!("agent/token/{}", token_type))
             .json(&body)
-            .send()?;
-        if r.status() != StatusCode::OK {
-            Err(ErrorKind::UnexpectedResponse(r.text()?))?
-        }
-        Ok(())
+            .send()?
+            .parse()
     }
 
     /// https://www.consul.io/api/agent/check.html#list-checks
     fn checks(&self) -> Result<HashMap<String, AgentCheck>> {
-        let mut r = Request::new(&self, Method::GET, "agent/checks").send()?;
-        if r.status() != StatusCode::OK {
-            Err(ErrorKind::UnexpectedResponse(r.text()?))?
-        }
-        Ok(r.json().context(ErrorKind::InvalidResponse)?)
+        Request::new(&self, Method::GET, "agent/checks")
+            .send()?
+            .parse_json()
     }
 
     /// https://www.consul.io/api/agent/check.html#register-check
     fn check_register(&self, check: &AgentCheckRegistration) -> Result<()> {
-        let mut r = Request::new(&self, Method::PUT, "agent/check/register")
+        Request::new(&self, Method::PUT, "agent/check/register")
             .json(check)
-            .send()?;
-        if r.status() != StatusCode::OK {
-            Err(ErrorKind::UnexpectedResponse(r.text()?))?
-        }
-        Ok(())
+            .send()?
+            .parse()
     }
 
     /// https://www.consul.io/api/agent/check.html#deregister-check
     fn check_deregister(&self, check_id: &str) -> Result<()> {
-        let mut r = Request::new(
+        Request::new(
             &self,
             Method::PUT,
             &format!("agent/check/deregister/{}", check_id),
         )
-        .send()?;
-        if r.status() != StatusCode::OK {
-            Err(ErrorKind::UnexpectedResponse(r.text()?))?
-        }
-        Ok(())
+        .send()?
+        .parse()
     }
 
     /// https://www.consul.io/api/agent/check.html#ttl-check-pass
@@ -542,17 +513,14 @@ impl Agent for Client {
                 params.insert(String::from("note"), note.to_string());
             }
         }
-        let mut r = Request::new_with_params(
+        Request::new_with_params(
             &self,
             Method::PUT,
             &format!("agent/check/pass/{}", check_id),
             params,
         )
-        .send()?;
-        if r.status() != StatusCode::OK {
-            Err(ErrorKind::UnexpectedResponse(r.text()?))?
-        }
-        Ok(())
+        .send()?
+        .parse()
     }
 
     /// https://www.consul.io/api/agent/check.html#ttl-check-warn
@@ -563,17 +531,14 @@ impl Agent for Client {
                 params.insert(String::from("note"), note.to_string());
             }
         }
-        let mut r = Request::new_with_params(
+        Request::new_with_params(
             &self,
             Method::PUT,
             &format!("agent/check/warn/{}", check_id),
             params,
         )
-        .send()?;
-        if r.status() != StatusCode::OK {
-            Err(ErrorKind::UnexpectedResponse(r.text()?))?
-        }
-        Ok(())
+        .send()?
+        .parse()
     }
 
     /// https://www.consul.io/api/agent/check.html#ttl-check-fail
@@ -584,17 +549,14 @@ impl Agent for Client {
                 params.insert(String::from("note"), note.to_string());
             }
         }
-        let mut r = Request::new_with_params(
+        Request::new_with_params(
             &self,
             Method::PUT,
             &format!("agent/check/fail/{}", check_id),
             params,
         )
-        .send()?;
-        if r.status() != StatusCode::OK {
-            Err(ErrorKind::UnexpectedResponse(r.text()?))?
-        }
-        Ok(())
+        .send()?
+        .parse()
     }
 
     /// https://www.consul.io/api/agent/check.html#ttl-check-update
@@ -602,61 +564,47 @@ impl Agent for Client {
         let mut json: HashMap<String, String> = HashMap::new();
         json.insert(String::from("status"), status.to_string());
         json.insert(String::from("output"), output.to_string());
-        let mut r = Request::new(
+        Request::new(
             &self,
             Method::PUT,
             &format!("agent/check/update/{}", check_id),
         )
         .json(&json)
-        .send()?;
-        if r.status() != StatusCode::OK {
-            Err(ErrorKind::UnexpectedResponse(r.text()?))?
-        }
-        Ok(())
+        .send()?
+        .parse()
     }
 
     /// https://www.consul.io/api/agent/service.html#list-services
     fn services(&self) -> Result<HashMap<String, AgentService>> {
-        let mut r = Request::new(&self, Method::GET, "agent/services").send()?;
-        if r.status() != StatusCode::OK {
-            Err(ErrorKind::UnexpectedResponse(r.text()?))?
-        }
-        Ok(r.json().context(ErrorKind::InvalidResponse)?)
+        Request::new(&self, Method::GET, "agent/services")
+            .send()?
+            .parse_json()
     }
 
     /// https://www.consul.io/api/agent/service.html#get-service-configuration
     fn service(&self, service_id: &str) -> Result<AgentService> {
-        let mut r =
-            Request::new(&self, Method::GET, &format!("agent/service/{}", service_id)).send()?;
-        if r.status() != StatusCode::OK {
-            Err(ErrorKind::UnexpectedResponse(r.text()?))?
-        }
-        Ok(r.json().context(ErrorKind::InvalidResponse)?)
+        Request::new(&self, Method::GET, &format!("agent/service/{}", service_id))
+            .send()?
+            .parse_json()
     }
 
     /// https://www.consul.io/api/agent/service.html#register-service
     fn service_register(&self, service: &AgentServiceRegistration) -> Result<()> {
-        let mut r = Request::new(&self, Method::PUT, "agent/service/register")
+        Request::new(&self, Method::PUT, "agent/service/register")
             .json(service)
-            .send()?;
-        if r.status() != StatusCode::OK {
-            Err(ErrorKind::UnexpectedResponse(r.text()?))?
-        }
-        Ok(())
+            .send()?
+            .parse()
     }
 
     /// https://www.consul.io/api/agent/service.html#deregister-service
     fn service_deregister(&self, service_id: &str) -> Result<()> {
-        let mut r = Request::new(
+        Request::new(
             &self,
             Method::PUT,
             &format!("agent/service/deregister/{}", service_id),
         )
-        .send()?;
-        if r.status() != StatusCode::OK {
-            Err(ErrorKind::UnexpectedResponse(r.text()?))?
-        }
-        Ok(())
+        .send()?
+        .parse()
     }
 
     /// https://www.consul.io/api/agent/service.html#enable-maintenance-mode
@@ -673,50 +621,39 @@ impl Agent for Client {
                 params.insert(String::from("reason"), reason.to_string());
             }
         }
-        let mut r = Request::new_with_params(
+        Request::new_with_params(
             &self,
             Method::PUT,
             &format!("agent/service/maintenance/{}", service_id),
             params,
         )
-        .send()?;
-        if r.status() != StatusCode::OK {
-            Err(ErrorKind::UnexpectedResponse(r.text()?))?
-        }
-        Ok(())
+        .send()?
+        .parse()
     }
 
     /// https://www.consul.io/api/agent/connect.html#authorize
     fn authorize(&self, auth: &AgentAuthorizeParams) -> Result<AgentAuthorize> {
-        let mut r = Request::new(&self, Method::POST, "agent/connect/authorize")
+        Request::new(&self, Method::POST, "agent/connect/authorize")
             .json(auth)
-            .send()?;
-        if r.status() != StatusCode::OK {
-            Err(ErrorKind::UnexpectedResponse(r.text()?))?
-        }
-        Ok(r.json().context(ErrorKind::InvalidResponse)?)
+            .send()?
+            .parse_json()
     }
 
     /// https://www.consul.io/api/agent/connect.html#certificate-authority-ca-roots
     fn connect_ca_roots(&self) -> Result<CaRootList> {
-        let mut r = Request::new(&self, Method::GET, "agent/connect/ca/roots").send()?;
-        if r.status() != StatusCode::OK {
-            Err(ErrorKind::UnexpectedResponse(r.text()?))?
-        }
-        Ok(r.json().context(ErrorKind::InvalidResponse)?)
+        Request::new(&self, Method::GET, "agent/connect/ca/roots")
+            .send()?
+            .parse_json()
     }
 
     /// https://www.consul.io/api/agent/connect.html#service-leaf-certificate
     fn connect_ca_leaf(&self, service: &str) -> Result<LeafCert> {
-        let mut r = Request::new(
+        Request::new(
             &self,
             Method::GET,
             &format!("agent/connect/ca/leaf/{}", service),
         )
-        .send()?;
-        if r.status() != StatusCode::OK {
-            Err(ErrorKind::UnexpectedResponse(r.text()?))?
-        }
-        Ok(r.json().context(ErrorKind::InvalidResponse)?)
+        .send()?
+        .parse_json()
     }
 }

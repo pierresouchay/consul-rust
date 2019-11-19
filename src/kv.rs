@@ -7,6 +7,7 @@ use serde::{Deserialize, Deserializer};
 
 use error::*;
 use request::{Method, Request, StatusCode};
+use response::ResponseHelper;
 use {BlockingOptions, BlockingResponse, Client};
 
 // Types
@@ -140,15 +141,17 @@ impl Kv for Client {
         let mut r =
             Request::new_with_params(&self, Method::GET, &format!("kv/{}", key), params).send()?;
         if r.status() == StatusCode::NOT_FOUND {
-            Err(ErrorKind::KeyNotFound)?
+            return Err(crate::error::key_not_found(key));
         } else if r.status() != StatusCode::OK {
-            Err(ErrorKind::UnexpectedResponse(r.text()?))?
+            return Err(crate::error::unexpected_response(
+                r.text().unwrap_or(String::from("")),
+            ));
         }
-        let pairs: Vec<KvPair> = r.json().context(ErrorKind::InvalidResponse)?;
+        let pairs: Vec<KvPair> = r.json().map_err(crate::error::invalid_response)?;
         pairs
             .into_iter()
             .next()
-            .ok_or_else(|| Error::from(ErrorKind::InvalidResponse))
+            .ok_or_else(|| crate::Error::new(crate::error::Kind::InvalidResponse))
     }
 
     /// https://www.consul.io/api/kv.html#read-key
@@ -171,9 +174,11 @@ impl Kv for Client {
         if r.status() == StatusCode::NOT_FOUND {
             return Ok(Vec::new());
         } else if r.status() != StatusCode::OK {
-            Err(ErrorKind::UnexpectedResponse(r.text()?))?
+            return Err(crate::error::unexpected_response(
+                r.text().unwrap_or(String::from("")),
+            ));
         }
-        Ok(r.json().context(ErrorKind::InvalidResponse)?)
+        r.json().map_err(crate::error::invalid_response)
     }
 
     /// https://www.consul.io/api/kv.html#read-key
@@ -197,9 +202,11 @@ impl Kv for Client {
         if r.status() == StatusCode::NOT_FOUND {
             return Ok(Vec::new());
         } else if r.status() != StatusCode::OK {
-            Err(ErrorKind::UnexpectedResponse(r.text()?))?
+            return Err(crate::error::unexpected_response(
+                r.text().unwrap_or(String::from("")),
+            ));
         }
-        Ok(r.json().context(ErrorKind::InvalidResponse)?)
+        r.json().map_err(crate::error::invalid_response)
     }
 
     /// https://www.consul.io/api/kv.html#create-update-key
@@ -225,13 +232,10 @@ impl Kv for Client {
                 params.insert(String::from("release"), release.to_string());
             }
         }
-        let mut r = Request::new_with_params(&self, Method::PUT, &format!("kv/{}", key), params)
+        Request::new_with_params(&self, Method::PUT, &format!("kv/{}", key), params)
             .body(value.to_vec())
-            .send()?;
-        if r.status() != StatusCode::OK {
-            Err(ErrorKind::UnexpectedResponse(r.text()?))?
-        }
-        Ok(r.json().context(ErrorKind::InvalidResponse)?)
+            .send()?
+            .parse_json()
     }
 
     /// https://www.consul.io/api/kv.html#create-update-key
@@ -240,7 +244,7 @@ impl Kv for Client {
         if let Some(session) = &kv.session {
             params.insert(String::from("acquire"), session.to_string());
         } else {
-            Err(ErrorKind::MissingSessionFlag)?
+            return Err(crate::error::missing_session_flag());
         }
         params.insert(String::from("flags"), kv.flags.to_string());
         if let Some(dc) = options
@@ -249,13 +253,10 @@ impl Kv for Client {
         {
             params.insert(String::from("dc"), dc.to_string());
         }
-        let mut r = Request::new_with_params(&self, Method::PUT, &format!("kv/{}", kv.key), params)
+        Request::new_with_params(&self, Method::PUT, &format!("kv/{}", kv.key), params)
             .json(&kv.value)
-            .send()?;
-        if r.status() != StatusCode::OK {
-            Err(ErrorKind::UnexpectedResponse(r.text()?))?
-        }
-        Ok(r.json().context(ErrorKind::InvalidResponse)?)
+            .send()?
+            .parse_json()
     }
 
     /// https://www.consul.io/api/kv.html#create-update-key
@@ -264,7 +265,7 @@ impl Kv for Client {
         if let Some(session) = &kv.session {
             params.insert(String::from("release"), session.to_string());
         } else {
-            Err(ErrorKind::MissingSessionFlag)?
+            return Err(crate::error::missing_session_flag());
         }
         params.insert(String::from("flags"), kv.flags.to_string());
         if let Some(dc) = options
@@ -273,13 +274,10 @@ impl Kv for Client {
         {
             params.insert(String::from("dc"), dc.to_string());
         }
-        let mut r = Request::new_with_params(&self, Method::PUT, &format!("kv/{}", kv.key), params)
+        Request::new_with_params(&self, Method::PUT, &format!("kv/{}", kv.key), params)
             .json(&kv.value)
-            .send()?;
-        if r.status() != StatusCode::OK {
-            Err(ErrorKind::UnexpectedResponse(r.text()?))?
-        }
-        Ok(r.json().context(ErrorKind::InvalidResponse)?)
+            .send()?
+            .parse_json()
     }
 
     /// https://www.consul.io/api/kv.html#delete-key
@@ -293,12 +291,9 @@ impl Kv for Client {
                 params.insert(String::from("cas"), cas.to_string());
             }
         }
-        let mut r = Request::new_with_params(&self, Method::DELETE, &format!("kv/{}", key), params)
-            .send()?;
-        if r.status() != StatusCode::OK {
-            Err(ErrorKind::UnexpectedResponse(r.text()?))?
-        }
-        Ok(r.json().context(ErrorKind::InvalidResponse)?)
+        Request::new_with_params(&self, Method::DELETE, &format!("kv/{}", key), params)
+            .send()?
+            .parse_json()
     }
 }
 
@@ -331,19 +326,21 @@ impl KvBlocking for Client {
         let mut r =
             Request::new_with_params(&self, Method::GET, &format!("kv/{}", key), params).send()?;
         let index = match r.headers().get("X-Consul-Index") {
-            Some(i) => {
-                u64::from_str(str::from_utf8(i.as_bytes()).map_err(|e| ErrorKind::Utf8Error(e))?)
-                    .map_err(|e| ErrorKind::IntError(e))?
-            }
-            None => return Err(ErrorKind::MissingIndex)?,
+            Some(i) => u64::from_str(str::from_utf8(i.as_bytes()).map_err(crate::error::decode)?)
+                .map_err(crate::error::decode)?,
+            None => return Err(crate::error::missing_index())?,
         };
         let body: Option<KvPair> = match r.status() {
             StatusCode::OK => {
-                let mut pairs: Vec<KvPair> = r.json().context(ErrorKind::InvalidResponse)?;
+                let pairs: Vec<KvPair> = r.json().map_err(crate::error::invalid_response)?;
                 pairs.into_iter().next()
             }
             StatusCode::NOT_FOUND => None,
-            _ => Err(ErrorKind::UnexpectedResponse(r.text()?))?,
+            _ => {
+                return Err(crate::error::unexpected_response(
+                    r.text().unwrap_or(String::from("")),
+                ));
+            }
         };
         Ok(BlockingResponse { index, body })
     }
@@ -377,16 +374,18 @@ impl KvBlocking for Client {
         let mut r = Request::new_with_params(&self, Method::GET, &format!("kv/{}", prefix), params)
             .send()?;
         let index = match r.headers().get("X-Consul-Index") {
-            Some(i) => {
-                u64::from_str(str::from_utf8(i.as_bytes()).map_err(|e| ErrorKind::Utf8Error(e))?)
-                    .map_err(|e| ErrorKind::IntError(e))?
-            }
-            None => return Err(ErrorKind::MissingIndex)?,
+            Some(i) => u64::from_str(str::from_utf8(i.as_bytes()).map_err(crate::error::decode)?)
+                .map_err(crate::error::decode)?,
+            None => return Err(crate::error::missing_index())?,
         };
         let body: Vec<KvPair> = match r.status() {
-            StatusCode::OK => r.json().context(ErrorKind::InvalidResponse)?,
+            StatusCode::OK => r.json().map_err(crate::error::invalid_response)?,
             StatusCode::NOT_FOUND => Vec::new(),
-            _ => Err(ErrorKind::UnexpectedResponse(r.text()?))?,
+            _ => {
+                return Err(crate::error::unexpected_response(
+                    r.text().unwrap_or(String::from("")),
+                ));
+            }
         };
         Ok(BlockingResponse { index, body })
     }
@@ -421,16 +420,18 @@ impl KvBlocking for Client {
         let mut r = Request::new_with_params(&self, Method::GET, &format!("kv/{}", prefix), params)
             .send()?;
         let index = match r.headers().get("X-Consul-Index") {
-            Some(i) => {
-                u64::from_str(str::from_utf8(i.as_bytes()).map_err(|e| ErrorKind::Utf8Error(e))?)
-                    .map_err(|e| ErrorKind::IntError(e))?
-            }
-            None => return Err(ErrorKind::MissingIndex)?,
+            Some(i) => u64::from_str(str::from_utf8(i.as_bytes()).map_err(crate::error::decode)?)
+                .map_err(crate::error::decode)?,
+            None => return Err(crate::error::missing_index())?,
         };
         let body: Vec<String> = match r.status() {
-            StatusCode::OK => r.json().context(ErrorKind::InvalidResponse)?,
+            StatusCode::OK => r.json().map_err(crate::error::invalid_response)?,
             StatusCode::NOT_FOUND => Vec::new(),
-            _ => Err(ErrorKind::UnexpectedResponse(r.text()?))?,
+            _ => {
+                return Err(crate::error::unexpected_response(
+                    r.text().unwrap_or(String::from("")),
+                ));
+            }
         };
         Ok(BlockingResponse { index, body })
     }

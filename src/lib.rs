@@ -1,7 +1,6 @@
 #![allow(unused_doc_comments)]
 
 extern crate base64;
-extern crate failure;
 extern crate reqwest;
 extern crate serde;
 #[macro_use]
@@ -17,13 +16,14 @@ pub mod kv;
 pub mod session;
 
 mod request;
+mod response;
 
 use std::time::Duration;
 
 use reqwest::Client as HttpClient;
 use reqwest::ClientBuilder;
 
-pub use error::{Error, ErrorKind, Result};
+pub use error::{Error, Result};
 
 #[derive(Clone, Debug)]
 pub struct Client {
@@ -94,9 +94,14 @@ impl ConfigBuilder {
         let client = if let Some(client) = self.client.take() {
             client
         } else if let Some(timeout) = self.timeout {
-            ClientBuilder::new().timeout(timeout).build()?
+            ClientBuilder::new()
+                .timeout(timeout)
+                .build()
+                .map_err(crate::error::builder)?
         } else {
-            ClientBuilder::new().build()?
+            ClientBuilder::new()
+                .build()
+                .map_err(crate::error::builder)?
         };
         Ok(Config {
             address: self.address.to_string(),

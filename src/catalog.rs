@@ -2,7 +2,8 @@ use std::collections::HashMap;
 
 use agent::{AgentCheck, AgentService};
 use error::*;
-use request::{Method, Request, StatusCode};
+use request::{Method, Request};
+use response::ResponseHelper;
 use Client;
 
 // Types
@@ -145,13 +146,10 @@ pub trait Catalog {
 impl Catalog for Client {
     /// https://www.consul.io/api/catalog.html#register-entity
     fn register(&self, catalog: &CatalogRegistration) -> Result<bool> {
-        let mut r = Request::new(&self, Method::PUT, "catalog/register")
+        Request::new(&self, Method::PUT, "catalog/register")
             .json(catalog)
-            .send()?;
-        if r.status() != StatusCode::OK {
-            Err(ErrorKind::UnexpectedResponse(r.text()?))?
-        }
-        Ok(r.json().context(ErrorKind::InvalidResponse)?)
+            .send()?
+            .parse_json()
     }
 
     /// https://www.consul.io/api/catalog.html#deregister-entity
@@ -169,22 +167,17 @@ impl Catalog for Client {
                 body.insert(String::from("service_id"), service_id.to_string());
             }
         }
-        let mut r = Request::new(&self, Method::PUT, "catalog/deregister")
+        Request::new(&self, Method::PUT, "catalog/deregister")
             .json(&body)
-            .send()?;
-        if r.status() != StatusCode::OK {
-            Err(ErrorKind::UnexpectedResponse(r.text()?))?
-        }
-        Ok(r.json().context(ErrorKind::InvalidResponse)?)
+            .send()?
+            .parse_json()
     }
 
     /// https://www.consul.io/api/catalog.html#list-datacenters
     fn datacenters(&self) -> Result<Vec<String>> {
-        let mut r = Request::new(&self, Method::GET, "catalog/datacenters").send()?;
-        if r.status() != StatusCode::OK {
-            Err(ErrorKind::UnexpectedResponse(r.text()?))?
-        }
-        Ok(r.json().context(ErrorKind::InvalidResponse)?)
+        Request::new(&self, Method::GET, "catalog/datacenters")
+            .send()?
+            .parse_json()
     }
 
     /// https://www.consul.io/api/catalog.html#list-nodes
@@ -204,11 +197,9 @@ impl Catalog for Client {
                 params.insert(String::from("node-meta"), node_meta.to_string());
             }
         }
-        let mut r = Request::new_with_params(&self, Method::GET, "catalog/nodes", params).send()?;
-        if r.status() != StatusCode::OK {
-            Err(ErrorKind::UnexpectedResponse(r.text()?))?
-        }
-        Ok(r.json().context(ErrorKind::InvalidResponse)?)
+        Request::new_with_params(&self, Method::GET, "catalog/nodes", params)
+            .send()?
+            .parse_json()
     }
 
     /// https://www.consul.io/api/catalog.html#list-services
@@ -225,12 +216,9 @@ impl Catalog for Client {
                 params.insert(String::from("node-meta"), node_meta.to_string());
             }
         }
-        let mut r =
-            Request::new_with_params(&self, Method::GET, "catalog/services", params).send()?;
-        if r.status() != StatusCode::OK {
-            Err(ErrorKind::UnexpectedResponse(r.text()?))?
-        }
-        Ok(r.json().context(ErrorKind::InvalidResponse)?)
+        Request::new_with_params(&self, Method::GET, "catalog/services", params)
+            .send()?
+            .parse_json()
     }
 
     /// https://www.consul.io/api/catalog.html#list-nodes-for-service
@@ -253,17 +241,14 @@ impl Catalog for Client {
                 params.insert(String::from("node-meta"), node_meta.to_string());
             }
         }
-        let mut r = Request::new_with_params(
+        Request::new_with_params(
             &self,
             Method::GET,
             &format!("catalog/service/{}", service),
             params,
         )
-        .send()?;
-        if r.status() != StatusCode::OK {
-            Err(ErrorKind::UnexpectedResponse(r.text()?))?
-        }
-        Ok(r.json().context(ErrorKind::InvalidResponse)?)
+        .send()?
+        .parse_json()
     }
 
     /// https://www.consul.io/api/catalog.html#list-nodes-for-connect-capable-service
@@ -286,17 +271,14 @@ impl Catalog for Client {
                 params.insert(String::from("node-meta"), node_meta.to_string());
             }
         }
-        let mut r = Request::new_with_params(
+        Request::new_with_params(
             &self,
             Method::GET,
             &format!("catalog/connect/{}", service),
             params,
         )
-        .send()?;
-        if r.status() != StatusCode::OK {
-            Err(ErrorKind::UnexpectedResponse(r.text()?))?
-        }
-        Ok(r.json().context(ErrorKind::InvalidResponse)?)
+        .send()?
+        .parse_json()
     }
 
     /// https://www.consul.io/api/catalog.html#list-services-for-node
@@ -308,16 +290,13 @@ impl Catalog for Client {
         {
             params.insert(String::from("dc"), dc.to_string());
         }
-        let mut r = Request::new_with_params(
+        Request::new_with_params(
             &self,
             Method::GET,
             &format!("catalog/node/{}", node),
             params,
         )
-        .send()?;
-        if r.status() != StatusCode::OK {
-            Err(ErrorKind::UnexpectedResponse(r.text()?))?
-        }
-        Ok(r.json().context(ErrorKind::InvalidResponse)?)
+        .send()?
+        .parse_json()
     }
 }

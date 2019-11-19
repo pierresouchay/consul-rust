@@ -4,7 +4,8 @@ use std::time::Duration;
 use serde::{Deserialize, Deserializer};
 
 use error::*;
-use request::{Method, Request, StatusCode};
+use request::{Method, Request};
+use response::ResponseHelper;
 use Client;
 
 // Types
@@ -94,10 +95,7 @@ impl Session for Client {
         } else {
             Request::new(&self, Method::PUT, "session/create").send()?
         };
-        if r.status() != StatusCode::OK {
-            Err(ErrorKind::UnexpectedResponse(r.text()?))?
-        }
-        let session_id: SessionID = r.json().context(ErrorKind::InvalidResponse)?;
+        let session_id: SessionID = r.parse_json()?;
         Ok(session_id.id)
     }
 
@@ -110,17 +108,14 @@ impl Session for Client {
         {
             params.insert(String::from("dc"), dc.to_string());
         }
-        let mut r = Request::new_with_params(
+        Request::new_with_params(
             &self,
             Method::PUT,
             &format!("session/destroy/{}", uuid),
             params,
         )
-        .send()?;
-        if r.status() != StatusCode::OK {
-            Err(ErrorKind::UnexpectedResponse(r.text()?))?
-        }
-        Ok(r.json().context(ErrorKind::InvalidResponse)?)
+        .send()?
+        .parse_json()
     }
 
     /// https://www.consul.io/api/session.html#read-session
@@ -139,10 +134,7 @@ impl Session for Client {
             params,
         )
         .send()?;
-        if r.status() != StatusCode::OK {
-            Err(ErrorKind::UnexpectedResponse(r.text()?))?
-        }
-        let entries: Vec<SessionEntry> = r.json().context(ErrorKind::InvalidResponse)?;
+        let entries: Vec<SessionEntry> = r.parse_json()?;
         Ok(entries.into_iter().next())
     }
 
@@ -155,17 +147,14 @@ impl Session for Client {
         {
             params.insert(String::from("dc"), dc.to_string());
         }
-        let mut r = Request::new_with_params(
+        Request::new_with_params(
             &self,
             Method::GET,
             &format!("session/node/{}", node),
             params,
         )
-        .send()?;
-        if r.status() != StatusCode::OK {
-            Err(ErrorKind::UnexpectedResponse(r.text()?))?
-        }
-        Ok(r.json().context(ErrorKind::InvalidResponse)?)
+        .send()?
+        .parse_json()
     }
 
     /// https://www.consul.io/api/session.html#list-sessions
@@ -177,11 +166,9 @@ impl Session for Client {
         {
             params.insert(String::from("dc"), dc.to_string());
         }
-        let mut r = Request::new_with_params(&self, Method::GET, "session/list", params).send()?;
-        if r.status() != StatusCode::OK {
-            Err(ErrorKind::UnexpectedResponse(r.text()?))?
-        }
-        Ok(r.json().context(ErrorKind::InvalidResponse)?)
+        Request::new_with_params(&self, Method::GET, "session/list", params)
+            .send()?
+            .parse_json()
     }
 
     /// https://www.consul.io/api/session.html#renew-session
@@ -200,13 +187,10 @@ impl Session for Client {
             params,
         )
         .send()?;
-        if r.status() != StatusCode::OK {
-            Err(ErrorKind::UnexpectedResponse(r.text()?))?
-        }
-        let entries: Vec<SessionEntry> = r.json().context(ErrorKind::InvalidResponse)?;
+        let entries: Vec<SessionEntry> = r.parse_json()?;
         entries
             .into_iter()
             .next()
-            .ok_or_else(|| Error::from(ErrorKind::InvalidResponse))
+            .ok_or_else(|| crate::Error::new(crate::error::Kind::InvalidResponse))
     }
 }

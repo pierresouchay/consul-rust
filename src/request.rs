@@ -38,7 +38,7 @@ impl Request {
                 return Request {
                     client: client.config.http_client.clone(),
                     request: None,
-                    err: Some(Error::from(err)),
+                    err: Some(crate::error::request(err)),
                 };
             }
         };
@@ -73,7 +73,7 @@ impl Request {
                             .insert(CONTENT_TYPE, HeaderValue::from_static("application/json"));
                         *req.body_mut() = Some(body.into());
                     }
-                    Err(err) => self.err = Some(Error::from(err)),
+                    Err(err) => self.err = Some(crate::error::request(err)),
                 }
             }
         }
@@ -86,6 +86,6 @@ impl Request {
         }
         self.client
             .execute(self.request.take().expect("Request cannot be reused"))
-            .map_err(|e| e.into())
+            .map_err(crate::error::request)
     }
 }

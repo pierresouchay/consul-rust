@@ -1,101 +1,126 @@
-use std::fmt::{self, Display};
-use std::result;
+use std::error::Error as StdError;
+use std::fmt;
 
-pub use failure::ResultExt;
-use failure::{Backtrace, Context, Fail};
+pub type Result<T> = std::result::Result<T, Error>;
 
-use reqwest;
-use serde_json;
-
-pub type Result<T> = result::Result<T, Error>;
-
-#[derive(Debug)]
 pub struct Error {
-    inner: Context<ErrorKind>,
+    inner: Box<Inner>,
 }
 
-#[derive(Clone, Debug, Eq, PartialEq, Fail)]
-pub enum ErrorKind {
-    #[fail(display = "Failed to parse option value")]
-    InvalidOption,
-    #[fail(display = "Failed to parse index")]
-    InvalidIndex,
-    #[fail(display = "Failed to parse response")]
+pub(crate) type Source = Box<dyn StdError + Send + Sync>;
+
+struct Inner {
+    kind: Kind,
+    source: Option<Source>,
+}
+
+#[derive(Debug)]
+pub(crate) enum Kind {
+    Builder,
+    Decode,
     InvalidResponse,
-    #[fail(display = "Session flag is require to acquire lock")]
-    MissingSessionFlag,
-    #[fail(display = "Index missing from response header")]
-    MissingIndex,
-    #[fail(display = "Key not found")]
     KeyNotFound,
-    #[fail(display = "Unexpected response: {}", _0)]
-    UnexpectedResponse(String),
-    #[fail(display = "Utf8Error")]
-    Utf8Error(#[cause] std::str::Utf8Error),
-    #[fail(display = "IntError")]
-    IntError(#[cause] std::num::ParseIntError),
-    #[fail(display = "Reqwest error: {}", _0)]
-    Reqwest(String),
-    #[fail(display = "Serde JSON error: {}", _0)]
-    SerdeJson(String),
+    MissingIndex,
+    MissingSessionFlag,
+    Request,
+    UnexpectedResponse,
 }
 
 impl Error {
-    pub fn kind(&self) -> &ErrorKind {
-        self.inner.get_context()
+    pub(crate) fn new(kind: Kind) -> Error {
+        Error {
+            inner: Box::new(Inner { kind, source: None }),
+        }
+    }
+
+    pub(crate) fn with<S: Into<Source>>(mut self, source: S) -> Error {
+        self.inner.source = Some(source.into());
+        self
+    }
+
+    #[allow(unused)]
+    pub(crate) fn kind(&self) -> &Kind {
+        &self.inner.kind
     }
 }
 
-impl Fail for Error {
-    fn cause(&self) -> Option<&Fail> {
-        self.inner.cause()
-    }
-
-    fn backtrace(&self) -> Option<&Backtrace> {
-        self.inner.backtrace()
+impl fmt::Debug for Error {
+    fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let mut builder = fmt.debug_struct("Error");
+        builder.field("kind", &self.inner.kind);
+        if let Some(ref source) = self.inner.source {
+            builder.field("source", source);
+        }
+        builder.finish()
     }
 }
 
-impl Display for Error {
+impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        Display::fmt(&self.inner, f)
-    }
-}
-
-impl From<ErrorKind> for Error {
-    fn from(kind: ErrorKind) -> Error {
-        Error {
-            inner: Context::new(kind),
+        if let Some(ref source) = self.inner.source {
+            write!(f, "{}: {}", self.description(), source)
+        } else {
+            f.write_str(self.description())
         }
     }
 }
 
-impl From<Context<ErrorKind>> for Error {
-    fn from(inner: Context<ErrorKind>) -> Error {
-        Error { inner }
+impl StdError for Error {
+    fn description(&self) -> &str {
+        match self.inner.kind {
+            Kind::Builder => "builder error",
+            Kind::Decode => "decoding error",
+            Kind::InvalidResponse => "invalid response from server",
+            Kind::KeyNotFound => "key not found",
+            Kind::MissingIndex => "missing index",
+            Kind::MissingSessionFlag => "missing session flag",
+            Kind::Request => "error sending request",
+            Kind::UnexpectedResponse => "unexpected response from server",
+        }
+    }
+
+    fn source(&self) -> Option<&(dyn StdError + 'static)> {
+        self.inner.source.as_ref().map(|e| &**e as _)
     }
 }
 
-impl From<reqwest::Error> for Error {
-    fn from(err: reqwest::Error) -> Error {
-        Error {
-            inner: Context::new(ErrorKind::Reqwest(err.to_string())),
-        }
-    }
+// Helpers
+#[allow(unused)]
+pub(crate) fn builder<E: Into<Source>>(e: E) -> Error {
+    Error::new(Kind::Builder).with(e)
 }
 
-impl From<reqwest::UrlError> for Error {
-    fn from(err: reqwest::UrlError) -> Error {
-        Error {
-            inner: Context::new(ErrorKind::Reqwest(err.to_string())),
-        }
-    }
+#[allow(unused)]
+pub(crate) fn decode<E: Into<Source>>(e: E) -> Error {
+    Error::new(Kind::Decode).with(e)
 }
 
-impl From<serde_json::Error> for Error {
-    fn from(err: serde_json::Error) -> Error {
-        Error {
-            inner: Context::new(ErrorKind::SerdeJson(err.to_string())),
-        }
-    }
+#[allow(unused)]
+pub(crate) fn invalid_response<E: Into<Source>>(e: E) -> Error {
+    Error::new(Kind::InvalidResponse).with(e)
+}
+
+#[allow(unused)]
+pub(crate) fn key_not_found<E: Into<Source>>(e: E) -> Error {
+    Error::new(Kind::KeyNotFound).with(e)
+}
+
+#[allow(unused)]
+pub(crate) fn missing_index() -> Error {
+    Error::new(Kind::MissingIndex)
+}
+
+#[allow(unused)]
+pub(crate) fn missing_session_flag() -> Error {
+    Error::new(Kind::MissingSessionFlag)
+}
+
+#[allow(unused)]
+pub(crate) fn request<E: Into<Source>>(e: E) -> Error {
+    Error::new(Kind::Request).with(e)
+}
+
+#[allow(unused)]
+pub(crate) fn unexpected_response<E: Into<Source>>(e: E) -> Error {
+    Error::new(Kind::UnexpectedResponse).with(e)
 }

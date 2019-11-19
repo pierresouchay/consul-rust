@@ -3,7 +3,8 @@ use std::collections::HashMap;
 use agent::AgentService;
 use catalog::Node;
 use error::*;
-use request::{Method, Request, StatusCode};
+use request::{Method, Request};
+use response::ResponseHelper;
 use Client;
 
 // Types
@@ -118,13 +119,9 @@ impl Health for Client {
         {
             params.insert(String::from("dc"), dc.to_string());
         }
-        let mut r =
-            Request::new_with_params(&self, Method::GET, &format!("health/node/{}", node), params)
-                .send()?;
-        if r.status() != StatusCode::OK {
-            Err(ErrorKind::UnexpectedResponse(r.text()?))?
-        }
-        Ok(r.json().context(ErrorKind::InvalidResponse)?)
+        Request::new_with_params(&self, Method::GET, &format!("health/node/{}", node), params)
+            .send()?
+            .parse_json()
     }
 
     /// https://www.consul.io/api/health.html#list-checks-for-service
@@ -144,17 +141,14 @@ impl Health for Client {
                 params.insert(String::from("node-meta"), node_meta.to_string());
             }
         }
-        let mut r = Request::new_with_params(
+        Request::new_with_params(
             &self,
             Method::GET,
             &format!("health/checks/{}", service),
             params,
         )
-        .send()?;
-        if r.status() != StatusCode::OK {
-            Err(ErrorKind::UnexpectedResponse(r.text()?))?
-        }
-        Ok(r.json().context(ErrorKind::InvalidResponse)?)
+        .send()?
+        .parse_json()
     }
 
     /// https://www.consul.io/api/health.html#list-nodes-for-service
@@ -184,17 +178,14 @@ impl Health for Client {
                 params.insert(String::from("passing"), passing.to_string());
             }
         }
-        let mut r = Request::new_with_params(
+        Request::new_with_params(
             &self,
             Method::GET,
             &format!("health/service/{}", service),
             params,
         )
-        .send()?;
-        if r.status() != StatusCode::OK {
-            Err(ErrorKind::UnexpectedResponse(r.text()?))?
-        }
-        Ok(r.json().context(ErrorKind::InvalidResponse)?)
+        .send()?
+        .parse_json()
     }
 
     /// https://www.consul.io/api/health.html#list-nodes-for-connect-capable-service
@@ -224,17 +215,14 @@ impl Health for Client {
                 params.insert(String::from("passing"), passing.to_string());
             }
         }
-        let mut r = Request::new_with_params(
+        Request::new_with_params(
             &self,
             Method::GET,
             &format!("health/connect/{}", service),
             params,
         )
-        .send()?;
-        if r.status() != StatusCode::OK {
-            Err(ErrorKind::UnexpectedResponse(r.text()?))?
-        }
-        Ok(r.json().context(ErrorKind::InvalidResponse)?)
+        .send()?
+        .parse_json()
     }
 
     /// https://www.consul.io/api/health.html#list-checks-in-state
@@ -254,16 +242,13 @@ impl Health for Client {
                 params.insert(String::from("node-meta"), node_meta.to_string());
             }
         }
-        let mut r = Request::new_with_params(
+        Request::new_with_params(
             &self,
             Method::GET,
             &format!("health/state/{}", state),
             params,
         )
-        .send()?;
-        if r.status() != StatusCode::OK {
-            Err(ErrorKind::UnexpectedResponse(r.text()?))?
-        }
-        Ok(r.json().context(ErrorKind::InvalidResponse)?)
+        .send()?
+        .parse_json()
     }
 }
