@@ -23,6 +23,8 @@ pub struct HealthCheck {
     pub service_name: String,
     pub service_tags: Vec<String>,
     pub definition: HealthCheckDefinition,
+    pub create_index: isize,
+    pub modify_index: isize,
 }
 
 #[serde(default, rename_all = "PascalCase")]
@@ -30,8 +32,9 @@ pub struct HealthCheck {
 pub struct HealthCheckDefinition {
     #[serde(rename = "HTTP")]
     pub http: String,
-    pub header: HashMap<String, String>,
+    pub header: Option<HashMap<String, String>>,
     pub method: String,
+    #[serde(rename = "TLSSkipVerify")]
     pub tls_skip_verify: bool,
     #[serde(rename = "TCP")]
     pub tcp: String,

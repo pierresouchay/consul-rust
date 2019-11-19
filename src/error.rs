@@ -23,6 +23,7 @@ pub(crate) enum Kind {
     MissingIndex,
     MissingSessionFlag,
     Request,
+    ServiceNotFound,
     UnexpectedResponse,
 }
 
@@ -75,6 +76,7 @@ impl StdError for Error {
             Kind::MissingIndex => "missing index",
             Kind::MissingSessionFlag => "missing session flag",
             Kind::Request => "error sending request",
+            Kind::ServiceNotFound => "service not found",
             Kind::UnexpectedResponse => "unexpected response from server",
         }
     }
@@ -118,6 +120,11 @@ pub(crate) fn missing_session_flag() -> Error {
 #[allow(unused)]
 pub(crate) fn request<E: Into<Source>>(e: E) -> Error {
     Error::new(Kind::Request).with(e)
+}
+
+#[allow(unused)]
+pub(crate) fn service_not_found<E: Into<Source>>(e: E) -> Error {
+    Error::new(Kind::ServiceNotFound).with(e)
 }
 
 #[allow(unused)]

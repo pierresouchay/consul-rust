@@ -2,8 +2,8 @@ use std::collections::HashMap;
 use std::fmt;
 
 use error::*;
-use health::HealthCheckDefinition;
-use request::{Method, Request};
+use health::{HealthCheck, HealthCheckDefinition};
+use request::{Method, Request, StatusCode};
 use response::ResponseHelper;
 
 use Client;
@@ -35,7 +35,8 @@ pub struct AgentWeights {
 #[serde(default, rename_all = "PascalCase")]
 #[derive(Clone, Default, Serialize, Deserialize, Debug)]
 pub struct AgentService {
-    pub kind: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub kind: Option<String>,
     #[serde(rename = "ID")]
     pub id: String,
     pub service: String,
@@ -45,22 +46,30 @@ pub struct AgentService {
     pub address: String,
     pub weights: AgentWeights,
     pub enable_tag_override: bool,
-    pub create_index: u64,
-    pub modify_index: u64,
-    pub proxy_destination: String,
-    pub connect: AgentServiceConnect,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub create_index: Option<u64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub modify_index: Option<u64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub content_hash: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub proxy: Option<AgentServiceConnectProxyConfig>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub connect: Option<AgentServiceConnect>,
 }
 
 #[serde(default, rename_all = "PascalCase")]
 #[derive(Clone, Default, Serialize, Deserialize, Debug)]
 pub struct AgentServiceConnect {
-    pub native: bool,
-    pub proxy: AgentServiceConnectProxy,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub native: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub sidecar_service: Option<AgentServiceRegistration>,
 }
 
 #[serde(default, rename_all = "PascalCase")]
 #[derive(Clone, Default, Serialize, Deserialize, Debug)]
-pub struct AgentServiceConnectProxy {
+pub struct AgentServiceConnectProxyConfig {
     pub destination_service_name: String,
     #[serde(
         skip_serializing_if = "Option::is_none",
@@ -115,9 +124,9 @@ pub struct AgentServiceRegistration {
     pub check: AgentServiceCheck,
     pub checks: AgentServiceChecks,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub proxy_destination: Option<String>,
+    pub proxy: Option<AgentServiceConnectProxyConfig>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub connect: Option<AgentServiceConnect>,
+    pub connect: Option<Box<AgentServiceConnect>>,
 }
 
 #[serde(default, rename_all = "PascalCase")]
@@ -176,6 +185,14 @@ pub struct AgentServiceCheck {
     pub deregister_critical_service_after: Option<String>,
 }
 type AgentServiceChecks = Vec<AgentServiceCheck>;
+
+#[serde(default, rename_all = "PascalCase")]
+#[derive(Clone, Default, Serialize, Deserialize, Debug)]
+pub struct AgentServiceChecksInfo {
+    pub aggregated_status: String,
+    pub service: AgentService,
+    pub checks: Vec<HealthCheck>,
+}
 
 #[serde(default, rename_all = "PascalCase")]
 #[derive(Clone, Default, Serialize, Deserialize, Debug)]
@@ -305,7 +322,7 @@ type CheckPassOptions = CheckOptions;
 type CheckWarnOptions = CheckOptions;
 type CheckFailOptions = CheckOptions;
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq)]
 pub enum HealthStatus {
     Passing,
     Warning,
@@ -365,10 +382,14 @@ pub trait Agent {
     fn services(&self) -> Result<HashMap<String, AgentService>>;
     // TODO: blocking
     fn service(&self, service_id: &str) -> Result<AgentService>;
-    // TODO: Needs access to response status
-    // fn agent_service_health(&self, service_name: &str) -> Result<HashMap<HealthStatus, Vec<AgentService>>>;
-    // TODO: Needs access to response status
-    // fn agent_service_health_by_id(&self, service_id: &str) -> Result<HashMap<HealthStatus, Vec<AgentService>>>;
+    fn service_health(
+        &self,
+        service_name: &str,
+    ) -> Result<(HealthStatus, Vec<AgentServiceChecksInfo>)>;
+    fn service_health_by_id(
+        &self,
+        service_id: &str,
+    ) -> Result<(HealthStatus, Vec<AgentServiceChecksInfo>)>;
     fn service_register(&self, service: &AgentServiceRegistration) -> Result<()>;
     fn service_deregister(&self, service_id: &str) -> Result<()>;
     fn service_maintenance(
@@ -586,6 +607,60 @@ impl Agent for Client {
         Request::new(&self, Method::GET, &format!("agent/service/{}", service_id))
             .send()?
             .parse_json()
+    }
+
+    /// https://www.consul.io/api/agent/service.html#get-local-service-health
+    fn service_health(
+        &self,
+        service_name: &str,
+    ) -> Result<(HealthStatus, Vec<AgentServiceChecksInfo>)> {
+        let mut r = Request::new(
+            &self,
+            Method::GET,
+            &format!("agent/health/service/name/{}", service_name),
+        )
+        .send()?;
+        let status = if r.status() == StatusCode::NOT_FOUND {
+            return Err(crate::error::service_not_found(service_name));
+        } else if r.status() == StatusCode::OK {
+            HealthStatus::Passing
+        } else if r.status() == StatusCode::TOO_MANY_REQUESTS {
+            HealthStatus::Warning
+        } else if r.status() == StatusCode::SERVICE_UNAVAILABLE {
+            HealthStatus::Critical
+        } else {
+            return Err(crate::error::unexpected_response(
+                r.text().unwrap_or(String::from("")),
+            ));
+        };
+        Ok((status, r.json().map_err(crate::error::invalid_response)?))
+    }
+
+    /// https://www.consul.io/api/agent/service.html#get-local-service-health-by-its-id
+    fn service_health_by_id(
+        &self,
+        service_id: &str,
+    ) -> Result<(HealthStatus, Vec<AgentServiceChecksInfo>)> {
+        let mut r = Request::new(
+            &self,
+            Method::GET,
+            &format!("agent/health/service/id/{}", service_id),
+        )
+        .send()?;
+        let status = if r.status() == StatusCode::NOT_FOUND {
+            return Err(crate::error::service_not_found(service_id));
+        } else if r.status() == StatusCode::OK {
+            HealthStatus::Passing
+        } else if r.status() == StatusCode::TOO_MANY_REQUESTS {
+            HealthStatus::Warning
+        } else if r.status() == StatusCode::SERVICE_UNAVAILABLE {
+            HealthStatus::Critical
+        } else {
+            return Err(crate::error::unexpected_response(
+                r.text().unwrap_or(String::from("")),
+            ));
+        };
+        Ok((status, r.json().map_err(crate::error::invalid_response)?))
     }
 
     /// https://www.consul.io/api/agent/service.html#register-service
