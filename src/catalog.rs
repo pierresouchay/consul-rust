@@ -1,10 +1,11 @@
 use std::collections::HashMap;
+use std::str::{self, FromStr};
 
 use agent::{AgentCheck, AgentService};
 use error::*;
 use request::{Method, Request};
 use response::ResponseHelper;
-use Client;
+use {BlockingOptions, BlockingResponse, Client};
 
 // Types
 #[serde(default, rename_all = "PascalCase")]
@@ -133,7 +134,6 @@ pub trait Catalog {
     fn datacenters(&self) -> Result<Vec<String>>;
     // TODO: blocking
     fn nodes(&self, options: Option<&NodesOptions>) -> Result<Vec<CatalogNode>>;
-    // TODO: blocking
     fn services(&self, options: Option<&ServicesOptions>) -> Result<HashMap<String, Vec<String>>>;
     // TODO: blocking
     fn service(&self, service: &str, options: Option<&ServiceOptions>) -> Result<CatalogService>;
@@ -141,6 +141,14 @@ pub trait Catalog {
     fn connect(&self, service: &str, options: Option<&ServiceOptions>) -> Result<CatalogService>;
     // TODO: blocking
     fn node(&self, node: &str, options: Option<&NodeOptions>) -> Result<CatalogNode>;
+}
+
+pub trait CatalogBlocking {
+    fn services(
+        &self,
+        index: u64,
+        options: Option<BlockingOptions<&ServicesOptions>>,
+    ) -> Result<BlockingResponse<HashMap<String, Vec<String>>>>;
 }
 
 impl Catalog for Client {
@@ -298,5 +306,42 @@ impl Catalog for Client {
         )
         .send()?
         .parse_json()
+    }
+}
+
+impl CatalogBlocking for Client {
+    fn services(
+        &self,
+        index: u64,
+        options: Option<BlockingOptions<&ServicesOptions>>,
+    ) -> Result<BlockingResponse<HashMap<String, Vec<String>>>> {
+        let mut params: HashMap<String, String> = HashMap::new();
+        params.insert(String::from("index"), index.to_string());
+        if let Some(dc) = options
+            .as_ref()
+            .and_then(|o| o.options.and_then(|o| o.dc.as_ref()))
+            .or_else(|| self.config.datacenter.as_ref())
+        {
+            params.insert(String::from("dc"), dc.to_string());
+        }
+        if let Some(options) = options {
+            if let Some(wait) = &options.wait {
+                params.insert(String::from("wait"), format!("{}s", wait.as_secs()));
+            }
+            if let Some(options) = options.options {
+                if let Some(node_meta) = &options.node_meta {
+                    params.insert(String::from("node-meta"), node_meta.to_string());
+                }
+            }
+        }
+        let mut r =
+            Request::new_with_params(&self, Method::GET, "catalog/services", params).send()?;
+        let index = match r.headers().get("X-Consul-Index") {
+            Some(i) => u64::from_str(str::from_utf8(i.as_bytes()).map_err(crate::error::decode)?)
+                .map_err(crate::error::decode)?,
+            None => return Err(crate::error::missing_index())?,
+        };
+        let body: HashMap<String, Vec<String>> = r.parse_json()?;
+        Ok(BlockingResponse { index, body })
     }
 }
