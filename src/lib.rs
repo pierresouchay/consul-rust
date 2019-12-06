@@ -44,6 +44,7 @@ pub struct Config {
     pub datacenter: Option<String>,
     pub http_client: HttpClient,
     pub wait_time: Option<Duration>,
+    pub token: Option<String>
 }
 
 impl Config {
@@ -56,6 +57,7 @@ impl Config {
                 datacenter: None,
                 http_client: client,
                 wait_time: None,
+                token: None
             })
     }
 }
