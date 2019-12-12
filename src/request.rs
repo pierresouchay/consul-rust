@@ -41,7 +41,15 @@ pub fn get_vec<R: DeserializeOwned>(
     let url =
         Url::parse_with_params(&url_str, params.iter()).chain_err(|| "Failed to parse URL")?;
     let start = Instant::now();
-    let response = config.http_client.get(url).send();
+    let builder = config.http_client.get(url);
+
+    let response = match &config.token {
+      Some(token) => {
+        builder.header("X-Consul-Token", token).send()
+      }
+      _ => builder.send()
+    };
+
     response
         .chain_err(|| "HTTP request to consul failed")
         .and_then(|mut r| {
@@ -208,6 +216,14 @@ where
     } else {
         builder
     };
+
+    let builder = match &config.token {
+      Some(token) => {
+        builder.header("X-Consul-Token", token)
+      }
+      _ => builder
+    };
+
     builder
         .send()
         .chain_err(|| "HTTP request to consul failed")
