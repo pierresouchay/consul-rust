@@ -41,7 +41,7 @@ pub struct AgentService {
     pub id: String,
     pub service: String,
     pub tags: Vec<String>,
-    pub meta: HashMap<String, String>,
+    pub meta: Option<HashMap<String, String>>,
     pub port: isize,
     pub address: String,
     pub weights: AgentWeights,
@@ -389,7 +389,7 @@ pub trait Agent {
     fn service_health_by_id(
         &self,
         service_id: &str,
-    ) -> Result<(HealthStatus, Vec<AgentServiceChecksInfo>)>;
+    ) -> Result<(HealthStatus, AgentServiceChecksInfo)>;
     fn service_register(&self, service: &AgentServiceRegistration) -> Result<()>;
     fn service_deregister(&self, service_id: &str) -> Result<()>;
     fn service_maintenance(
@@ -640,7 +640,7 @@ impl Agent for Client {
     fn service_health_by_id(
         &self,
         service_id: &str,
-    ) -> Result<(HealthStatus, Vec<AgentServiceChecksInfo>)> {
+    ) -> Result<(HealthStatus, AgentServiceChecksInfo)> {
         let mut r = Request::new(
             &self,
             Method::GET,

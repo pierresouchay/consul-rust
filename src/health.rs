@@ -1,11 +1,12 @@
 use std::collections::HashMap;
+use std::str::{self, FromStr};
 
 use agent::AgentService;
 use catalog::Node;
 use error::*;
 use request::{Method, Request};
 use response::ResponseHelper;
-use Client;
+use {BlockingOptions, BlockingResponse, Client};
 
 // Types
 #[serde(default, rename_all = "PascalCase")]
@@ -102,7 +103,6 @@ pub trait Health {
     fn node(&self, node: &str, options: Option<&NodeOptions>) -> Result<HealthChecks>;
     // TODO: blocking
     fn checks(&self, service: &str, options: Option<&CheckOptions>) -> Result<HealthChecks>;
-    // TODO: blocking
     fn service(&self, service: &str, options: Option<&ServiceOptions>)
         -> Result<Vec<ServiceEntry>>;
     // TODO: blocking
@@ -110,6 +110,15 @@ pub trait Health {
         -> Result<Vec<ServiceEntry>>;
     // TODO: blocking
     fn state(&self, state: &str, options: Option<&StateOptions>) -> Result<HealthChecks>;
+}
+
+pub trait HealthBlocking {
+    fn service(
+        &self,
+        index: u64,
+        service: &str,
+        options: Option<BlockingOptions<&ServiceOptions>>,
+    ) -> Result<BlockingResponse<Vec<ServiceEntry>>>;
 }
 
 impl Health for Client {
@@ -253,5 +262,57 @@ impl Health for Client {
         )
         .send()?
         .parse_json()
+    }
+}
+
+impl HealthBlocking for Client {
+    fn service(
+        &self,
+        index: u64,
+        service: &str,
+        options: Option<BlockingOptions<&ServiceOptions>>,
+    ) -> Result<BlockingResponse<Vec<ServiceEntry>>> {
+        let mut params: HashMap<String, String> = HashMap::new();
+        params.insert(String::from("index"), index.to_string());
+        if let Some(dc) = options
+            .as_ref()
+            .and_then(|o| o.options.and_then(|o| o.dc.as_ref()))
+            .or_else(|| self.config.datacenter.as_ref())
+        {
+            params.insert(String::from("dc"), dc.to_string());
+        }
+        if let Some(options) = options {
+            if let Some(wait) = &options.wait {
+                params.insert(String::from("wait"), format!("{}s", wait.as_secs()));
+            }
+            if let Some(options) = options.options {
+                if let Some(near) = &options.near {
+                    params.insert(String::from("near"), near.to_string());
+                }
+                if let Some(tag) = &options.tag {
+                    params.insert(String::from("tag"), tag.to_string());
+                }
+                if let Some(node_meta) = &options.node_meta {
+                    params.insert(String::from("node-meta"), node_meta.to_string());
+                }
+                if let Some(passing) = options.passing {
+                    params.insert(String::from("passing"), passing.to_string());
+                }
+            }
+        }
+        let mut r = Request::new_with_params(
+            &self,
+            Method::GET,
+            &format!("health/service/{}", service),
+            params,
+        )
+        .send()?;
+        let index = match r.headers().get("X-Consul-Index") {
+            Some(i) => u64::from_str(str::from_utf8(i.as_bytes()).map_err(crate::error::decode)?)
+                .map_err(crate::error::decode)?,
+            None => return Err(crate::error::missing_index())?,
+        };
+        let body: Vec<ServiceEntry> = r.parse_json()?;
+        Ok(BlockingResponse { index, body })
     }
 }
