@@ -16,6 +16,8 @@ pub mod session;
 
 mod request;
 
+use std::env;
+
 use std::time::Duration;
 
 use reqwest::Client as HttpClient;
@@ -39,6 +41,7 @@ pub struct Config {
     pub address: String,
     pub datacenter: Option<String>,
     pub http_client: HttpClient,
+    pub token: Option<String>,
     pub wait_time: Option<Duration>,
 }
 
@@ -51,6 +54,32 @@ impl Config {
                 address: String::from("http://localhost:8500"),
                 datacenter: None,
                 http_client: client,
+                token: None,
+                wait_time: None,
+            })
+    }
+
+    pub fn new_from_env() -> Result<Config> {
+        let consul_addr = match env::var("CONSUL_HTTP_ADDR") {
+            Ok(val) => if val.starts_with("http") {
+                          val
+                       } else {
+                          format!("http://{}", val)
+                       },
+            Err(_e) => String::from("http://127.0.0.1:8500")
+        };
+        let consul_token = match env::var("CONSUL_HTTP_TOKEN") {
+            Ok(val) => Option::from(val),
+            Err(_e) => Option::None
+        };
+        ClientBuilder::new()
+            .build()
+            .chain_err(|| "Failed to build reqwest client")
+            .map(|client| Config {
+                address: String::from(consul_addr),
+                datacenter: None,
+                http_client: client,
+                token: consul_token,
                 wait_time: None,
             })
     }
