@@ -1,4 +1,4 @@
-## consul-rust 
+## consul-rust
 
 [![Build Status](https://travis-ci.org/stusmall/consul-rust.svg)](https://travis-ci.org/stusmall/consul-rust.svg)
 [![](https://img.shields.io/crates/v/consul.svg)](https://crates.io/crates/consul)
@@ -13,17 +13,19 @@ Rust client libray for [Consul](http://consul.io/) HTTP API
     extern crate consul;
 
     use std::collections::HashMap;
-    use consul::Client;
+    use consul::{Client, Config, QueryMeta};
+    use consul::catalog::Catalog;
 
     fn main(){
-        let client = Client::new("http://127.0.0.1:8500");
-        let services: HashMap<String, Vec<String>> = client.catalog.services().unwrap();
-        println!("{:?}", services);
+        let config = Config::new().unwrap();
+        let client = Client::new(config);
+		let services: (HashMap<String, String>, QueryMeta) = client.services(None).unwrap();
+		println!("{:?}", services);
     }
 ```
 
 
-For more example, see the **[tests](https://github.com/stusmall/consul-rust/blob/master/tests/example.rs)** .
+For more examples, see the **[tests](https://github.com/stusmall/consul-rust/blob/master/tests)** .
 
 ### Installation
 
