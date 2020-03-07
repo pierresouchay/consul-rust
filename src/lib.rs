@@ -6,6 +6,7 @@ extern crate error_chain;
 #[macro_use]
 extern crate serde_derive;
 
+pub mod structs;
 pub mod agent;
 pub mod catalog;
 pub mod connect_ca;

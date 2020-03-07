@@ -3,6 +3,7 @@ use std::collections::HashMap;
 use crate::agent::{AgentCheck, AgentService};
 use crate::errors::Result;
 use crate::request::{get, put};
+use crate::structs::*;
 use crate::{Client, QueryMeta, QueryOptions, WriteMeta, WriteOptions};
 
 #[serde(default)]
@@ -27,23 +28,35 @@ pub struct Node {
 
 #[serde(default)]
 #[derive(Eq, Default, PartialEq, Serialize, Deserialize, Debug)]
-pub struct CatalogService {
-    ID: String,
-    Node: String,
-    Address: String,
+pub struct NodeServiceProxy {
+    DestinationServiceName: String,
+    DestinationServiceID: String,
+    LocalServiceAddress: String,
+    LocalServicePort: u16,
+}
+
+
+#[serde(default)]
+#[derive(Eq, Default, PartialEq, Serialize, Deserialize, Debug)]
+pub struct CatalogNodeService {
+    ID: NodeID,
+    Node: NodeName,
+    Address: ConsulAddress,
     Datacenter: String,
-    TaggedAddresses: HashMap<String, String>,
-    NodeMeta: HashMap<String, String>,
-    ServiceID: String,
-    ServiceName: String,
-    ServiceAddress: String,
-    ServiceTags: Vec<String>,
-    ServiceMeta: HashMap<String, String>,
-    ServicePort: u32,
-    ServiceWeights: Weights,
-    ServiceEnableTagOverride: bool,
+    pub TaggedAddresses: TaggedAddresses,
+    pub Meta: Metadata,
     CreateIndex: u64,
     ModifyIndex: u64,
+    ServiceAddress: ConsulAddress,
+    ServiceEnableTagOverride: bool,
+    pub ServiceID: ServiceID,
+    pub ServiceName: ServiceName,
+    pub ServicePort: OptionalServicePort,
+    ServiceMeta: Metadata,
+    ServiceTaggedAddresses: TaggedAddresses,
+    ServiceTags: ServiceTags,
+    ServiceProxy: Option<NodeServiceProxy>,
+    Namespace: Option<String>,
 }
 
 #[serde(default)]
@@ -90,6 +103,7 @@ pub trait Catalog {
     ) -> Result<((), WriteMeta)>;
     fn datacenters(&self) -> Result<(Vec<String>, QueryMeta)>;
     fn nodes(&self, q: Option<&QueryOptions>) -> Result<(Vec<Node>, QueryMeta)>;
+    fn nodes_for_service(&self, service: &ServiceName, q: Option<&QueryOptions>) -> Result<(Vec<CatalogNodeService>, QueryMeta)>;
     fn services(
         &self,
         q: Option<&QueryOptions>,
@@ -142,10 +156,18 @@ impl Catalog for Client {
         get("/v1/catalog/nodes", &self.config, HashMap::new(), q)
     }
 
+    // https://www.consul.io/api/catalog.html#list-services
     fn services(
         &self,
         q: Option<&QueryOptions>,
     ) -> Result<(HashMap<String, Vec<String>>, QueryMeta)> {
+    fn services(&self, q: Option<&QueryOptions>) -> Result<(HashMap<String, Vec<String>>, QueryMeta)> {
         get("/v1/catalog/services", &self.config, HashMap::new(), q)
+    }
+
+    // https://www.consul.io/api/catalog.html#list-nodes-for-service
+    fn nodes_for_service(&self, service: &ServiceName, q: Option<&QueryOptions>) -> Result<(Vec<CatalogNodeService>, QueryMeta)> {
+        let path = format!("/v1/catalog/service/{}", service.to_str());
+        get(&path, &self.config, HashMap::new(), q)
     }
 }
