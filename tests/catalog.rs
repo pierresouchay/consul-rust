@@ -18,7 +18,7 @@ fn ds_services_test() {
     let r = client.services(Option::None).unwrap();
     assert_ne!(r.0.len(), 0);
     match r.0.get("consul") {
-        None      => panic!("Should have a Consul service"),
-        Some(val) => assert_eq!(val.len(), 0) // consul has no tags
+        None => panic!("Should have a Consul service"),
+        Some(val) => assert_eq!(val.len(), 0), // consul has no tags
     }
 }

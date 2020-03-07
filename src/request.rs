@@ -12,8 +12,8 @@ use reqwest::StatusCode;
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 
-use crate::{Config, QueryMeta, QueryOptions, WriteMeta, WriteOptions};
 use crate::errors::{Result, ResultExt};
+use crate::{Config, QueryMeta, QueryOptions, WriteMeta, WriteOptions};
 
 pub fn get_vec<R: DeserializeOwned>(
     path: &str,
