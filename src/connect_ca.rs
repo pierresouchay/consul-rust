@@ -2,9 +2,9 @@ use std::collections::HashMap;
 
 use serde_json::Value;
 
-use crate::{Client, QueryMeta, QueryOptions, WriteMeta, WriteOptions};
 use crate::errors::Result;
 use crate::request::{get, put};
+use crate::{Client, QueryMeta, QueryOptions, WriteMeta, WriteOptions};
 
 #[serde(default)]
 #[derive(Default, Serialize, Deserialize, Debug)]

@@ -1,9 +1,9 @@
 use std::collections::HashMap;
 
-use crate::{Client, QueryMeta, QueryOptions};
 use crate::agent::AgentService;
 use crate::errors::Result;
 use crate::request::get;
+use crate::{Client, QueryMeta, QueryOptions};
 
 #[serde(default)]
 #[derive(Eq, Default, PartialEq, Serialize, Deserialize, Debug)]

@@ -1,9 +1,8 @@
 use std::collections::HashMap;
 
-
-use crate::Client;
 use crate::errors::Result;
 use crate::request::{get, put};
+use crate::Client;
 
 #[serde(default)]
 #[derive(Clone, Default, Eq, PartialEq, Serialize, Deserialize, Debug)]
