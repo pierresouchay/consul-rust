@@ -61,17 +61,16 @@ impl Config {
 
     pub fn new_from_env() -> Result<Config> {
         let consul_addr = match env::var("CONSUL_HTTP_ADDR") {
-            Ok(val) => if val.starts_with("http") {
-                          val
-                       } else {
-                          format!("http://{}", val)
-                       },
-            Err(_e) => String::from("http://127.0.0.1:8500")
+            Ok(val) => {
+                if val.starts_with("http") {
+                    val
+                } else {
+                    format!("http://{}", val)
+                }
+            }
+            Err(_e) => String::from("http://127.0.0.1:8500"),
         };
-        let consul_token = match env::var("CONSUL_HTTP_TOKEN") {
-            Ok(val) => Option::from(val),
-            Err(_e) => Option::None
-        };
+        let consul_token = env::var("CONSUL_HTTP_TOKEN").ok();
         ClientBuilder::new()
             .build()
             .chain_err(|| "Failed to build reqwest client")

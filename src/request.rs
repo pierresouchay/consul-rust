@@ -18,7 +18,7 @@ use crate::{Config, QueryMeta, QueryOptions, WriteMeta, WriteOptions};
 fn add_config_options(builder: RequestBuilder, config: &Config) -> RequestBuilder {
     match &config.token {
         Some(val) => builder.header("X-Consul-Token", val),
-        None      => builder,
+        None => builder,
     }
 }
 
