@@ -15,6 +15,13 @@ use serde::Serialize;
 use crate::errors::{Result, ResultExt};
 use crate::{Config, QueryMeta, QueryOptions, WriteMeta, WriteOptions};
 
+fn add_config_options(builder: RequestBuilder, config: &Config) -> RequestBuilder {
+    match &config.token {
+        Some(val) => builder.header("X-Consul-Token", val),
+        None => builder,
+    }
+}
+
 pub fn get_vec<R: DeserializeOwned>(
     path: &str,
     config: &Config,
@@ -41,7 +48,8 @@ pub fn get_vec<R: DeserializeOwned>(
     let url =
         Url::parse_with_params(&url_str, params.iter()).chain_err(|| "Failed to parse URL")?;
     let start = Instant::now();
-    let response = config.http_client.get(url).send();
+    let request_builder = add_config_options(config.http_client.get(url), &config);
+    let response = request_builder.send();
     response
         .chain_err(|| "HTTP request to consul failed")
         .and_then(|mut r| {
@@ -105,7 +113,8 @@ pub fn get<R: DeserializeOwned>(
     let url =
         Url::parse_with_params(&url_str, params.iter()).chain_err(|| "Failed to parse URL")?;
     let start = Instant::now();
-    let response = config.http_client.get(url).send();
+    let request_builder = add_config_options(config.http_client.get(url), &config);
+    let response = request_builder.send();
     response
         .chain_err(|| "HTTP request to consul failed")
         .and_then(|mut r| {
@@ -199,6 +208,7 @@ where
     } else {
         builder
     };
+    let builder = add_config_options(builder, &config);
     builder
         .send()
         .chain_err(|| "HTTP request to consul failed")
