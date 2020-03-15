@@ -8,3 +8,4 @@ before_install:
 script:
   - cargo build
   - RUST_TEST_TASKS=1 cargo test
+  - cargo fmt -- --check
