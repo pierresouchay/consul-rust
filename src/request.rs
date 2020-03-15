@@ -5,9 +5,9 @@ use std::str;
 use std::str::FromStr;
 use std::time::Instant;
 
+use reqwest::blocking::Client as HttpClient;
+use reqwest::blocking::RequestBuilder;
 use reqwest::header::HeaderValue;
-use reqwest::Client as HttpClient;
-use reqwest::RequestBuilder;
 use reqwest::StatusCode;
 use serde::de::DeserializeOwned;
 use serde::Serialize;
@@ -52,12 +52,7 @@ pub fn get_vec<R: DeserializeOwned>(
     let response = request_builder.send();
     response
         .chain_err(|| "HTTP request to consul failed")
-        .and_then(|mut r| {
-            let j = if r.status() != StatusCode::NOT_FOUND {
-                r.json().chain_err(|| "Failed to parse JSON response")?
-            } else {
-                Vec::new()
-            };
+        .and_then(|r| {
             let x: Option<Result<u64>> = r
                 .headers()
                 .get("X-Consul-Index")
@@ -70,7 +65,11 @@ pub fn get_vec<R: DeserializeOwned>(
                                 .chain_err(|| "Failed to parse valid number for last index")
                         })
                 });
-
+            let j = if r.status() != StatusCode::NOT_FOUND {
+                r.json().chain_err(|| "Failed to parse JSON response")?
+            } else {
+                Vec::new()
+            };
             match x {
                 Some(r) => Ok((j, Some(r?))),
                 None => Ok((j, None)),
@@ -117,8 +116,7 @@ pub fn get<R: DeserializeOwned>(
     let response = request_builder.send();
     response
         .chain_err(|| "HTTP request to consul failed")
-        .and_then(|mut r| {
-            let j = r.json().chain_err(|| "Failed to parse JSON response")?;
+        .and_then(|r| {
             let x: Option<Result<u64>> =
                 r.headers()
                     .get("X-Consul-Index")
@@ -131,7 +129,7 @@ pub fn get<R: DeserializeOwned>(
                                     .chain_err(|| "Failed to parse valid number for last index")
                             })
                     });
-
+            let j = r.json().chain_err(|| "Failed to parse JSON response")?;
             match x {
                 Some(r) => Ok((j, Some(r?))),
                 None => Ok((j, None)),
@@ -212,7 +210,7 @@ where
     builder
         .send()
         .chain_err(|| "HTTP request to consul failed")
-        .and_then(|mut x| x.json().chain_err(|| "Failed to parse JSON"))
+        .and_then(|x| x.json().chain_err(|| "Failed to parse JSON"))
         .map(|x| {
             (
                 x,

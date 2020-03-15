@@ -20,8 +20,8 @@ use std::env;
 
 use std::time::Duration;
 
-use reqwest::Client as HttpClient;
-use reqwest::ClientBuilder;
+use reqwest::blocking::Client as HttpClient;
+use reqwest::blocking::ClientBuilder;
 
 use errors::{Result, ResultExt};
 
