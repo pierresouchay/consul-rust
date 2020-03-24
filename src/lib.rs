@@ -6,7 +6,6 @@ extern crate error_chain;
 #[macro_use]
 extern crate serde_derive;
 
-pub mod structs;
 pub mod agent;
 pub mod catalog;
 pub mod connect_ca;
@@ -14,6 +13,7 @@ pub mod errors;
 pub mod health;
 pub mod kv;
 pub mod session;
+pub mod structs;
 
 mod request;
 

@@ -30,7 +30,6 @@ fn ds_nodes_tests() {
     let client = Client::new(config);
     let r = client.nodes(Option::None).unwrap();
     assert_ne!(r.0.len(), 0);
-
 }
 
 #[test]

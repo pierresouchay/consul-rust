@@ -35,7 +35,6 @@ pub struct NodeServiceProxy {
     LocalServicePort: u16,
 }
 
-
 #[serde(default)]
 #[derive(Eq, Default, PartialEq, Serialize, Deserialize, Debug)]
 pub struct CatalogNodeService {
@@ -103,7 +102,11 @@ pub trait Catalog {
     ) -> Result<((), WriteMeta)>;
     fn datacenters(&self) -> Result<(Vec<String>, QueryMeta)>;
     fn nodes(&self, q: Option<&QueryOptions>) -> Result<(Vec<Node>, QueryMeta)>;
-    fn nodes_for_service(&self, service: &ServiceName, q: Option<&QueryOptions>) -> Result<(Vec<CatalogNodeService>, QueryMeta)>;
+    fn nodes_for_service(
+        &self,
+        service: &ServiceName,
+        q: Option<&QueryOptions>,
+    ) -> Result<(Vec<CatalogNodeService>, QueryMeta)>;
     fn services(
         &self,
         q: Option<&QueryOptions>,
@@ -161,12 +164,15 @@ impl Catalog for Client {
         &self,
         q: Option<&QueryOptions>,
     ) -> Result<(HashMap<String, Vec<String>>, QueryMeta)> {
-    fn services(&self, q: Option<&QueryOptions>) -> Result<(HashMap<String, Vec<String>>, QueryMeta)> {
         get("/v1/catalog/services", &self.config, HashMap::new(), q)
     }
 
     // https://www.consul.io/api/catalog.html#list-nodes-for-service
-    fn nodes_for_service(&self, service: &ServiceName, q: Option<&QueryOptions>) -> Result<(Vec<CatalogNodeService>, QueryMeta)> {
+    fn nodes_for_service(
+        &self,
+        service: &ServiceName,
+        q: Option<&QueryOptions>,
+    ) -> Result<(Vec<CatalogNodeService>, QueryMeta)> {
         let path = format!("/v1/catalog/service/{}", service.to_str());
         get(&path, &self.config, HashMap::new(), q)
     }
