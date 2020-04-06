@@ -2,11 +2,9 @@
 
 extern crate base64;
 extern crate reqwest;
-extern crate serde;
 #[macro_use]
-extern crate serde_derive;
+extern crate serde;
 extern crate serde_json;
-extern crate url;
 
 pub mod agent;
 pub mod catalog;
@@ -23,7 +21,7 @@ use std::time::Duration;
 use reqwest::Client as HttpClient;
 use reqwest::ClientBuilder;
 
-pub use error::{Error, Result};
+pub use error::{Error, Kind as ErrorKind, Result};
 
 #[derive(Clone, Debug)]
 pub struct Client {

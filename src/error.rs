@@ -15,7 +15,7 @@ struct Inner {
 }
 
 #[derive(Debug)]
-pub(crate) enum Kind {
+pub enum Kind {
     Builder,
     Decode,
     InvalidResponse,
@@ -40,7 +40,7 @@ impl Error {
     }
 
     #[allow(unused)]
-    pub(crate) fn kind(&self) -> &Kind {
+    pub fn kind(&self) -> &Kind {
         &self.inner.kind
     }
 }

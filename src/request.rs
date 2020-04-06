@@ -1,6 +1,5 @@
 use std::collections::HashMap;
 use std::convert::Into;
-use url::Url;
 
 use reqwest;
 use reqwest::header::{HeaderValue, CONTENT_TYPE};
@@ -32,7 +31,7 @@ impl Request {
         params: HashMap<String, String>,
     ) -> Request {
         let api = format!("{}/{}/{}", client.config.address, API_VERSION, path);
-        let url = match Url::parse_with_params(&api, params.iter()) {
+        let url = match reqwest::Url::parse_with_params(&api, params.iter()) {
             Ok(url) => url,
             Err(err) => {
                 return Request {
