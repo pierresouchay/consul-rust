@@ -15,9 +15,11 @@ keywords = ["consul", "discovery"]
 
 
 [dependencies]
+base64 = "0.12.1"
 error-chain = "0.12"
 serde = "1"
 serde_derive = "1"
 serde_json = "1.0"
+rand = "0.7.3"
 reqwest = { version = "0.10", features = ["blocking", "json"] }
 url = "2.1"
