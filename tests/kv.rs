@@ -1,12 +1,12 @@
 extern crate base64;
 
 extern crate consul;
-use consul::kv::{KV, KVPair};
+use consul::kv::{KVPair, KV};
 use consul::{Client, Config};
 
 extern crate rand;
-use rand::{thread_rng, Rng};
 use rand::distributions::Alphanumeric;
+use rand::{thread_rng, Rng};
 
 use std::str;
 
@@ -34,28 +34,23 @@ fn kv_add_test() {
 #[test]
 fn kv_delete_test() {
     let (client, unique_test_path) = set_up();
-    
+
     let kv_list_result = client.list(&unique_test_path, None).unwrap();
     assert!(kv_list_result.0.len() == 3);
 
-    let key_for_deletion = format!("{}/secondkey", unique_test_path); 
+    let key_for_deletion = format!("{}/secondkey", unique_test_path);
     client.delete(&key_for_deletion, None).unwrap();
 
     let kv_list_result = client.list(&unique_test_path, None).unwrap();
     assert!(kv_list_result.0.len() == 2);
 
-    let actual_key_names = kv_list_result.0
+    let actual_key_names = kv_list_result
+        .0
         .iter()
-        .map(|kv| kv.Key
-            .split("/")
-            .skip(1)
-            .next()
-            .unwrap())
+        .map(|kv| kv.Key.split("/").skip(1).next().unwrap())
         .collect::<Vec<&str>>();
 
-    let expected_key_names = vec![
-        "firstkey",
-        "thirdkey"];
+    let expected_key_names = vec!["firstkey", "thirdkey"];
 
     assert_eq!(actual_key_names, expected_key_names);
 
@@ -65,12 +60,15 @@ fn kv_delete_test() {
 #[test]
 fn kv_get_test() {
     let (client, unique_test_path) = set_up();
-    
+
     let key_to_get = format!("{}/secondkey", unique_test_path);
     let kv_pair = client.get(&key_to_get, None).unwrap();
 
     assert!(kv_pair.0.is_some());
-    assert!(kv_pair.0.unwrap().Value == "\"secondvalue\"");
+    let decoded_byte_array = base64::decode(kv_pair.0.unwrap().Value).unwrap();
+    let decoded_string = str::from_utf8(&decoded_byte_array).unwrap();
+
+    assert!(decoded_string == "\"secondvalue\"");
 
     tear_down(client, &unique_test_path);
 }
@@ -78,23 +76,17 @@ fn kv_get_test() {
 #[test]
 fn kv_list_test() {
     let (client, unique_test_path) = set_up();
-    
+
     let kv_list_result = client.list(&unique_test_path, None).unwrap();
     assert!(kv_list_result.0.len() == 3);
 
-    let actual_key_names = kv_list_result.0
+    let actual_key_names = kv_list_result
+        .0
         .iter()
-        .map(|kv| kv.Key
-            .split("/")
-            .skip(1)
-            .next()
-            .unwrap())
+        .map(|kv| kv.Key.split("/").skip(1).next().unwrap())
         .collect::<Vec<&str>>();
 
-    let expected_key_names = vec![
-        "firstkey",
-        "secondkey",
-        "thirdkey"];
+    let expected_key_names = vec!["firstkey", "secondkey", "thirdkey"];
 
     assert_eq!(actual_key_names, expected_key_names);
 
@@ -117,7 +109,10 @@ fn kv_put_test() {
     let kv_pair = client.get(&key_to_get, None).unwrap();
 
     assert!(kv_pair.0.is_some());
-    assert!(kv_pair.0.unwrap().Value == "\"updatedsecondvalue\"");
+    let decoded_byte_array = base64::decode(kv_pair.0.unwrap().Value).unwrap();
+    let decoded_string = str::from_utf8(&decoded_byte_array).unwrap();
+
+    assert!(decoded_string == "\"updatedsecondvalue\"");
 
     tear_down(client, &unique_test_path);
 }
@@ -126,10 +121,7 @@ fn set_up() -> (Client, String) {
     let config = Config::new().unwrap();
     let client = Client::new(config);
 
-    let unique_test_path: String = thread_rng()
-        .sample_iter(&Alphanumeric)
-        .take(16)
-        .collect();
+    let unique_test_path: String = thread_rng().sample_iter(&Alphanumeric).take(16).collect();
 
     let kv_pairs = vec![
         KVPair {
@@ -146,7 +138,7 @@ fn set_up() -> (Client, String) {
             Key: format!("{}/thirdkey", unique_test_path),
             Value: String::from("thirdvalue"),
             ..Default::default()
-        }
+        },
     ];
 
     for kv_pair in kv_pairs {
