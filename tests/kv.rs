@@ -70,10 +70,7 @@ fn kv_get_test() {
     let kv_pair = client.get(&key_to_get, None).unwrap();
 
     assert!(kv_pair.0.is_some());
-    let decoded_byte_array = base64::decode(kv_pair.0.unwrap().Value).unwrap();
-    let decoded_string = str::from_utf8(&decoded_byte_array).unwrap();
-
-    assert!(decoded_string == "\"secondvalue\"");
+    assert!(kv_pair.0.unwrap().Value == "\"secondvalue\"");
 
     tear_down(client, &unique_test_path);
 }
@@ -120,10 +117,7 @@ fn kv_put_test() {
     let kv_pair = client.get(&key_to_get, None).unwrap();
 
     assert!(kv_pair.0.is_some());
-    let decoded_byte_array = base64::decode(kv_pair.0.unwrap().Value).unwrap();
-    let decoded_string = str::from_utf8(&decoded_byte_array).unwrap();
-
-    assert!(decoded_string == "\"updatedsecondvalue\"");
+    assert!(kv_pair.0.unwrap().Value == "\"updatedsecondvalue\"");
 
     tear_down(client, &unique_test_path);
 }
