@@ -56,7 +56,7 @@ pub fn get_vec<R: DeserializeOwned>(
             let x: Option<Result<u64>> = r
                 .headers()
                 .get("X-Consul-Index")
-                .and_then(|value: &HeaderValue| Some(value.as_bytes()))
+                .map(|value: &HeaderValue| value.as_bytes())
                 .map(|bytes| {
                     str::from_utf8(bytes)
                         .chain_err(|| "Failed to parse valid UT8 for last index")
