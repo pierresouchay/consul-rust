@@ -32,7 +32,7 @@ pub struct Client {
 
 impl Client {
     pub fn new(config: Config) -> Self {
-        Client { config: config }
+        Client { config }
     }
 }
 
