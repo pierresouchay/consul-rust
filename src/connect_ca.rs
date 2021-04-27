@@ -8,6 +8,7 @@ use crate::{Client, QueryMeta, QueryOptions, WriteMeta, WriteOptions};
 
 #[serde(default)]
 #[derive(Default, Serialize, Deserialize, Debug)]
+#[allow(clippy::upper_case_acronyms)]
 pub struct CAConfig {
     Provider: String,
     Config: Value,
@@ -17,6 +18,7 @@ pub struct CAConfig {
 
 #[serde(default)]
 #[derive(Default, Serialize, Deserialize, Debug)]
+#[allow(clippy::upper_case_acronyms)]
 pub struct CARootList {
     ActiveRootID: String,
     TrustDomain: String,
@@ -25,6 +27,7 @@ pub struct CARootList {
 
 #[serde(default)]
 #[derive(Eq, Default, PartialEq, Serialize, Deserialize, Debug)]
+#[allow(clippy::upper_case_acronyms)]
 pub struct CARoot {
     ID: String,
     Name: String,
@@ -34,6 +37,7 @@ pub struct CARoot {
     ModifyIndex: u64,
 }
 
+#[allow(clippy::upper_case_acronyms)]
 pub trait ConnectCA {
     fn ca_roots(&self, q: Option<&QueryOptions>) -> Result<(CARootList, QueryMeta)>;
     fn ca_get_config(&self, q: Option<&QueryOptions>) -> Result<(CAConfig, QueryMeta)>;
