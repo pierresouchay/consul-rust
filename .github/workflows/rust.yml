@@ -23,7 +23,14 @@ jobs:
   test:
     name: Test Suite
     runs-on: ubuntu-latest
+    env:
+      RUST_TEST_TASKS: 1
     steps:
+      - name: Setup Consul Agent for tests
+        run: |
+          curl -L -o /tmp/consul.zip https://releases.hashicorp.com/consul/1.5.3/consul_1.5.3_linux_amd64.zip
+          unzip /tmp/consul.zip
+          ./consul agent -config-file data/consul-test.json > /tmp/consul.log &
       - uses: actions/checkout@v2
       - uses: actions-rs/toolchain@v1
         with:
