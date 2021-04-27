@@ -7,6 +7,7 @@ use crate::{Client, QueryMeta, QueryOptions, WriteMeta, WriteOptions};
 
 #[serde(default)]
 #[derive(Clone, Default, Eq, PartialEq, Serialize, Deserialize, Debug)]
+#[allow(clippy::upper_case_acronyms)]
 pub struct KVPair {
     pub Key: String,
     pub CreateIndex: Option<u64>,
@@ -17,6 +18,7 @@ pub struct KVPair {
     pub Session: Option<String>,
 }
 
+#[allow(clippy::upper_case_acronyms)]
 pub trait KV {
     fn acquire(&self, _: &KVPair, _: Option<&WriteOptions>) -> Result<(bool, WriteMeta)>;
     fn delete(&self, _: &str, _: Option<&WriteOptions>) -> Result<(bool, WriteMeta)>;

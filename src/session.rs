@@ -6,6 +6,7 @@ use crate::{Client, QueryMeta, QueryOptions, WriteMeta, WriteOptions};
 
 #[serde(default)]
 #[derive(Clone, Default, Eq, PartialEq, Serialize, Deserialize, Debug)]
+#[allow(clippy::upper_case_acronyms)]
 pub struct SessionID {
     pub ID: String,
 }
