@@ -1,3 +1,6 @@
+extern crate base64;
+
+use serde::{Deserialize, Deserializer};
 use std::collections::HashMap;
 
 use crate::errors::Error;
@@ -14,6 +17,7 @@ pub struct KVPair {
     pub ModifyIndex: Option<u64>,
     pub LockIndex: Option<u64>,
     pub Flags: Option<u64>,
+    #[serde(deserialize_with = "deserialize_kv_pair_value")]
     pub Value: String,
     pub Session: Option<String>,
 }
@@ -92,4 +96,15 @@ impl KV for Client {
             Err(Error::from("Session flag is required to release a lock"))
         }
     }
+}
+
+fn deserialize_kv_pair_value<'de, D>(deserializer: D) -> std::result::Result<String, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let raw_base64_string: &str = Deserialize::deserialize(deserializer)?;
+    let decoded_byte_array = base64::decode(raw_base64_string).unwrap();
+    let decoded_string = std::str::from_utf8(&decoded_byte_array).unwrap();
+
+    Ok(decoded_string.to_string())
 }
