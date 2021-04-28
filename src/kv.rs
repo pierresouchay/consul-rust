@@ -100,7 +100,7 @@ fn deserialize_kv_pair_value<'de, D>(deserializer: D) -> std::result::Result<Str
 where
     D: Deserializer<'de>,
 {
-    let raw_base64_string: &str = Deserialize::deserialize(deserializer).unwrap();
+    let raw_base64_string: &str = Deserialize::deserialize(deserializer)?;
     let decoded_byte_array = base64::decode(raw_base64_string).unwrap();
     let decoded_string = std::str::from_utf8(&decoded_byte_array).unwrap();
 
