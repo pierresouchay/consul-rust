@@ -82,6 +82,23 @@ impl Config {
                 wait_time: None,
             })
     }
+
+    pub fn new_from_consul_host(
+        host: &str,
+        port: Option<u16>,
+        token: Option<String>,
+    ) -> Result<Config> {
+        ClientBuilder::new()
+            .build()
+            .chain_err(|| "Failed to build reqwest client")
+            .map(|client| Config {
+                address: format!("{}:{}", host, port.unwrap_or(8500)),
+                datacenter: None,
+                http_client: client,
+                token,
+                wait_time: None,
+            })
+    }
 }
 
 #[derive(Clone, Debug, Default)]
