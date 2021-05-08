@@ -5,8 +5,8 @@ use crate::errors::Result;
 use crate::request::get;
 use crate::{Client, QueryMeta, QueryOptions};
 
-#[serde(default)]
 #[derive(Eq, Default, PartialEq, Serialize, Deserialize, Debug)]
+#[serde(default)]
 pub struct HealthCheck {
     pub Node: String,
     pub CheckID: String,
@@ -19,8 +19,8 @@ pub struct HealthCheck {
     pub ServiceTags: Option<Vec<String>>,
 }
 
-#[serde(default)]
 #[derive(Eq, Default, PartialEq, Serialize, Deserialize, Debug)]
+#[serde(default)]
 pub struct Node {
     pub ID: String,
     pub Node: String,
@@ -32,8 +32,8 @@ pub struct Node {
     pub ModifyIndex: u64,
 }
 
-#[serde(default)]
 #[derive(Eq, Default, PartialEq, Serialize, Deserialize, Debug)]
+#[serde(default)]
 pub struct ServiceEntry {
     pub Node: Node,
     pub Service: AgentService,

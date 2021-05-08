@@ -4,8 +4,8 @@ use crate::errors::Result;
 use crate::request::{get, put};
 use crate::Client;
 
-#[serde(default)]
 #[derive(Clone, Default, Eq, PartialEq, Serialize, Deserialize, Debug)]
+#[serde(default)]
 pub struct AgentCheck {
     pub Node: String,
     pub CheckID: String,
@@ -17,8 +17,8 @@ pub struct AgentCheck {
     pub ServiceName: String,
 }
 
-#[serde(default)]
 #[derive(Clone, Default, Eq, PartialEq, Serialize, Deserialize, Debug)]
+#[serde(default)]
 pub struct AgentMember {
     pub Name: String,
     pub Addr: String,
@@ -33,8 +33,8 @@ pub struct AgentMember {
     pub DelegateCur: u8,
 }
 
-#[serde(default)]
 #[derive(Eq, Default, PartialEq, Serialize, Deserialize, Debug)]
+#[serde(default)]
 pub struct AgentService {
     pub ID: String,
     pub Service: String,
