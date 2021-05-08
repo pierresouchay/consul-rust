@@ -5,15 +5,15 @@ use crate::errors::Result;
 use crate::request::{get, put};
 use crate::{Client, QueryMeta, QueryOptions, WriteMeta, WriteOptions};
 
-#[serde(default)]
 #[derive(Eq, Default, PartialEq, Serialize, Deserialize, Debug)]
+#[serde(default)]
 pub struct Weights {
     Passing: u32,
     Warning: u32,
 }
 
-#[serde(default)]
 #[derive(Eq, Default, PartialEq, Serialize, Deserialize, Debug)]
+#[serde(default)]
 pub struct Node {
     ID: String,
     Node: String,
@@ -25,8 +25,8 @@ pub struct Node {
     ModifyIndex: u64,
 }
 
-#[serde(default)]
 #[derive(Eq, Default, PartialEq, Serialize, Deserialize, Debug)]
+#[serde(default)]
 pub struct CatalogService {
     ID: String,
     Node: String,
@@ -46,15 +46,15 @@ pub struct CatalogService {
     ModifyIndex: u64,
 }
 
-#[serde(default)]
 #[derive(Eq, Default, PartialEq, Serialize, Deserialize, Debug)]
+#[serde(default)]
 pub struct CatalogNode {
     Node: Option<Node>,
     Services: HashMap<String, AgentService>,
 }
 
-#[serde(default)]
 #[derive(Eq, Default, PartialEq, Serialize, Deserialize, Debug)]
+#[serde(default)]
 pub struct CatalogRegistration {
     ID: String,
     Node: String,
@@ -67,8 +67,8 @@ pub struct CatalogRegistration {
     SkipNodeUpdate: bool,
 }
 
-#[serde(default)]
 #[derive(Eq, Default, PartialEq, Serialize, Deserialize, Debug)]
+#[serde(default)]
 pub struct CatalogDeregistration {
     Node: String,
     Address: String,

@@ -6,8 +6,8 @@ use crate::errors::Result;
 use crate::request::{get, put};
 use crate::{Client, QueryMeta, QueryOptions, WriteMeta, WriteOptions};
 
-#[serde(default)]
 #[derive(Default, Serialize, Deserialize, Debug)]
+#[serde(default)]
 #[allow(clippy::upper_case_acronyms)]
 pub struct CAConfig {
     Provider: String,
@@ -16,8 +16,8 @@ pub struct CAConfig {
     ModifyIndex: u64,
 }
 
-#[serde(default)]
 #[derive(Default, Serialize, Deserialize, Debug)]
+#[serde(default)]
 #[allow(clippy::upper_case_acronyms)]
 pub struct CARootList {
     ActiveRootID: String,
@@ -25,8 +25,8 @@ pub struct CARootList {
     Roots: Vec<CARoot>,
 }
 
-#[serde(default)]
 #[derive(Eq, Default, PartialEq, Serialize, Deserialize, Debug)]
+#[serde(default)]
 #[allow(clippy::upper_case_acronyms)]
 pub struct CARoot {
     ID: String,

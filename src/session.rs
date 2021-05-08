@@ -4,15 +4,15 @@ use crate::errors::Result;
 use crate::request::{get, put};
 use crate::{Client, QueryMeta, QueryOptions, WriteMeta, WriteOptions};
 
-#[serde(default)]
 #[derive(Clone, Default, Eq, PartialEq, Serialize, Deserialize, Debug)]
+#[serde(default)]
 #[allow(clippy::upper_case_acronyms)]
 pub struct SessionID {
     pub ID: String,
 }
 
-#[serde(default)]
 #[derive(Clone, Default, Eq, PartialEq, Serialize, Deserialize, Debug)]
+#[serde(default)]
 pub struct SessionEntry {
     pub CreateIndex: Option<u64>,
     pub ID: Option<String>,

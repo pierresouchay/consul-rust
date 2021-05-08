@@ -5,8 +5,8 @@ use crate::errors::Result;
 use crate::request::{delete, get, get_vec, put};
 use crate::{Client, QueryMeta, QueryOptions, WriteMeta, WriteOptions};
 
-#[serde(default)]
 #[derive(Clone, Default, Eq, PartialEq, Serialize, Deserialize, Debug)]
+#[serde(default)]
 #[allow(clippy::upper_case_acronyms)]
 pub struct KVPair {
     pub Key: String,
