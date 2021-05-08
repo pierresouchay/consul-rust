@@ -76,11 +76,11 @@ fn session_info_test() {
 
     assert_eq!(session_entries.len(), 1);
 
-    let session_entry = session_entries.iter().next().unwrap();
+    let session_entry = session_entries.get(0);
 
     assert_eq!(
-        session_entry.Name.as_ref().unwrap(),
-        &unique_test_identifier
+        *session_entry.as_ref().unwrap().Name.as_ref().unwrap(),
+        unique_test_identifier
     );
 
     tear_down(&client, &created_session_entry_id);
@@ -149,10 +149,10 @@ fn session_node_test() {
 
     let (session_entries, _) = client.node(&system_hostname, None).unwrap();
 
-    let filtered_session_entries = session_entries
+    let filtered_session_entries: Vec<&SessionEntry> = session_entries
         .iter()
         .filter(|s| s.Name.as_ref().unwrap() == &unique_test_identifier)
-        .collect::<Vec<&SessionEntry>>();
+        .collect();
 
     assert_eq!(filtered_session_entries.len(), 1);
 
@@ -164,7 +164,7 @@ fn session_renew_test() {
     let (client, unique_test_identifier) = set_up();
 
     let entry = SessionEntry {
-        Name: Some(unique_test_identifier.to_string()),
+        Name: Some(unique_test_identifier),
         ..Default::default()
     };
 
@@ -187,7 +187,7 @@ fn set_up() -> (Client, String) {
         .map(char::from)
         .collect();
 
-    return (client, unique_test_identifier);
+    (client, unique_test_identifier)
 }
 
 fn tear_down(client: &Client, session_id: &str) {
@@ -200,10 +200,10 @@ fn get_number_of_session_entries_with_matching_name(
 ) -> usize {
     let (session_entries, _) = client.list(None).unwrap();
 
-    let filtered_session_entries = session_entries
+    let filtered_session_entries: Vec<&SessionEntry> = session_entries
         .iter()
-        .filter(|s| s.Name.as_ref().unwrap() == &unique_test_identifier)
-        .collect::<Vec<&SessionEntry>>();
+        .filter(|s| s.Name.as_ref().unwrap() == unique_test_identifier)
+        .collect();
 
-    return filtered_session_entries.len();
+    filtered_session_entries.len()
 }
