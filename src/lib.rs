@@ -13,6 +13,7 @@ pub mod errors;
 pub mod health;
 pub mod kv;
 pub mod session;
+pub mod structs;
 
 mod request;
 
