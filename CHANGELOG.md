@@ -2,6 +2,9 @@
 
 ## <Unreleased>
 
+## 0.4.2
+
+* Added `Config::new_from_consul_host`(#57)
 * Various code refactoring
 * new CI using GitHub actions instead of Travis
 
