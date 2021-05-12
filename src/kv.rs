@@ -14,7 +14,7 @@ pub struct KVPair {
     pub ModifyIndex: Option<u64>,
     pub LockIndex: Option<u64>,
     pub Flags: Option<u64>,
-    pub Value: String,
+    pub Value: Option<String>,
     pub Session: Option<String>,
 }
 

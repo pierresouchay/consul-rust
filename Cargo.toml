@@ -23,5 +23,6 @@ url = "2.1"
 [dev-dependencies]
 base64 = "0.13"
 hostname = "0.3"
+mockito = "0.20.0"
 rand = "0.8.3"
 rstest = "0.8.0"
