@@ -216,7 +216,7 @@ where
                     if text.is_empty() {
                         Ok(Default::default())
                     } else {
-                        serde_json::from_str(&text).chain_err(|| "Failed to parse json")
+                        serde_json::from_str(&text).chain_err(|| "Failed to parse JSON")
                     }
                 }
                 Err(err) => Err(err)
