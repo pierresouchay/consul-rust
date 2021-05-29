@@ -146,7 +146,7 @@ pub fn get<R: DeserializeOwned>(
         })
 }
 
-pub fn delete<R: DeserializeOwned>(
+pub fn delete<R: DeserializeOwned+Default>(
     path: &str,
     config: &Config,
     params: HashMap<String, String>,
@@ -166,7 +166,7 @@ pub fn post<T: Serialize, R: DeserializeOwned>(path: &str,
     write_with_body(path, body, config, options, req)
 }
 */
-pub fn put<T: Serialize, R: DeserializeOwned>(
+pub fn put<T: Serialize, R: DeserializeOwned + Default>(
     path: &str,
     body: Option<&T>,
     config: &Config,
@@ -177,7 +177,7 @@ pub fn put<T: Serialize, R: DeserializeOwned>(
     write_with_body(path, body, config, params, options, req)
 }
 
-fn write_with_body<T: Serialize, R: DeserializeOwned, F>(
+fn write_with_body<T: Serialize, R: DeserializeOwned + Default, F>(
     path: &str,
     body: Option<&T>,
     config: &Config,
@@ -210,7 +210,18 @@ where
     builder
         .send()
         .chain_err(|| "HTTP request to consul failed")
-        .and_then(|x| x.json().chain_err(|| "Failed to parse JSON"))
+        .and_then(|x| {
+            match x.text().chain_err(|| "Failed to get text") {
+                Ok(text) => {
+                    if text.is_empty() {
+                        Ok(Default::default())
+                    } else {
+                        serde_json::from_str(&text).chain_err(|| "Failed to parse json")
+                    }
+                }
+                Err(err) => Err(err)
+            }
+        })
         .map(|x| {
             (
                 x,
