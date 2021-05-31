@@ -146,7 +146,7 @@ pub fn get<R: DeserializeOwned>(
         })
 }
 
-pub fn delete<R: DeserializeOwned+Default>(
+pub fn delete<R: DeserializeOwned + Default>(
     path: &str,
     config: &Config,
     params: HashMap<String, String>,
@@ -210,17 +210,15 @@ where
     builder
         .send()
         .chain_err(|| "HTTP request to consul failed")
-        .and_then(|x| {
-            match x.text().chain_err(|| "Failed to get text") {
-                Ok(text) => {
-                    if text.is_empty() {
-                        Ok(Default::default())
-                    } else {
-                        serde_json::from_str(&text).chain_err(|| "Failed to parse JSON")
-                    }
+        .and_then(|x| match x.text().chain_err(|| "Failed to get text") {
+            Ok(text) => {
+                if text.is_empty() {
+                    Ok(Default::default())
+                } else {
+                    serde_json::from_str(&text).chain_err(|| "Failed to parse JSON")
                 }
-                Err(err) => Err(err)
             }
+            Err(err) => Err(err),
         })
         .map(|x| {
             (

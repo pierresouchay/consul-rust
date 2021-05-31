@@ -1,8 +1,8 @@
 use std::collections::HashMap;
 
-use crate::Client;
 use crate::errors::Result;
 use crate::request::{get, put};
+use crate::Client;
 
 #[derive(Clone, Default, Eq, PartialEq, Serialize, Deserialize, Debug)]
 #[serde(default)]
@@ -59,7 +59,7 @@ pub struct AgentServiceRegistration {
 
 impl AgentServiceRegistration {
     pub fn new(name: String) -> AgentServiceRegistration {
-        AgentServiceRegistration{
+        AgentServiceRegistration {
             Name: name,
             ..Default::default()
         }
@@ -89,7 +89,8 @@ impl Agent for Client {
             &self.config,
             HashMap::new(),
             None,
-        ).map(|x| x.0)
+        )
+        .map(|x| x.0)
     }
     /// https://www.consul.io/api-docs/agent/service#deregister-service
     fn service_deregister(&self, service_id: &str) -> Result<()> {
@@ -100,7 +101,8 @@ impl Agent for Client {
             &self.config,
             HashMap::new(),
             None,
-        ).map(|x| x.0)
+        )
+        .map(|x| x.0)
     }
     /// https://www.consul.io/api/agent/check.html#list-checks
     fn checks(&self) -> Result<HashMap<String, AgentCheck>> {
@@ -123,7 +125,7 @@ impl Agent for Client {
             HashMap::new(),
             None,
         )
-            .map(|x| x.0)
+        .map(|x| x.0)
     }
 
     /// https://www.consul.io/api/agent.html#reload-agent
@@ -145,7 +147,7 @@ impl Agent for Client {
             params,
             None,
         )
-            .map(|x| x.0)
+        .map(|x| x.0)
     }
     ///https://www.consul.io/api/agent.html#join-agent
     fn join(&self, address: &str, wan: bool) -> Result<()> {
@@ -167,7 +169,7 @@ impl Agent for Client {
             HashMap::new(),
             None,
         )
-            .map(|x| x.0)
+        .map(|x| x.0)
     }
 
     ///https://www.consul.io/api/agent.html#force-leave-and-shutdown
@@ -179,6 +181,6 @@ impl Agent for Client {
             HashMap::new(),
             None,
         )
-            .map(|x| x.0)
+        .map(|x| x.0)
     }
 }
