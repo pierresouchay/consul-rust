@@ -46,9 +46,31 @@ pub struct AgentService {
     pub ModifyIndex: u64,
 }
 
+#[derive(Eq, Default, PartialEq, Serialize, Deserialize, Debug)]
+#[serde(default)]
+pub struct AgentServiceRegistration {
+    pub ID: String,
+    pub Name: String,
+    pub Tags: Option<Vec<String>>,
+    pub Port: u16,
+    pub Address: String,
+    pub EnableTagOverride: bool,
+}
+
+impl AgentServiceRegistration {
+    pub fn new(name: String) -> AgentServiceRegistration {
+        AgentServiceRegistration {
+            Name: name,
+            ..Default::default()
+        }
+    }
+}
+
 //I haven't implemetned https://www.consul.io/api/agent.html#read-configuration
 //I haven't implemetned https://www.consul.io/api/agent.html#stream-logs
 pub trait Agent {
+    fn service_register(&self, asr: &AgentServiceRegistration) -> Result<()>;
+    fn service_deregister(&self, service_id: &str) -> Result<()>;
     fn checks(&self) -> Result<HashMap<String, AgentCheck>>;
     fn members(&self, wan: bool) -> Result<AgentMember>;
     fn reload(&self) -> Result<()>;
@@ -59,6 +81,29 @@ pub trait Agent {
 }
 
 impl Agent for Client {
+    /// https://www.consul.io/api-docs/agent/service#register-service
+    fn service_register(&self, asr: &AgentServiceRegistration) -> Result<()> {
+        put(
+            "/v1/agent/service/register",
+            Some(asr),
+            &self.config,
+            HashMap::new(),
+            None,
+        )
+        .map(|x| x.0)
+    }
+    /// https://www.consul.io/api-docs/agent/service#deregister-service
+    fn service_deregister(&self, service_id: &str) -> Result<()> {
+        let path = "/v1/agent/service/deregister/".to_owned() + service_id;
+        put(
+            path.as_str(),
+            None as Option<&()>,
+            &self.config,
+            HashMap::new(),
+            None,
+        )
+        .map(|x| x.0)
+    }
     /// https://www.consul.io/api/agent/check.html#list-checks
     fn checks(&self) -> Result<HashMap<String, AgentCheck>> {
         get("/v1/agent/checks", &self.config, HashMap::new(), None).map(|x| x.0)
