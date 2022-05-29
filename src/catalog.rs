@@ -1,5 +1,7 @@
 use std::collections::HashMap;
 
+use async_trait::async_trait;
+
 use crate::agent::{AgentCheck, AgentService};
 use crate::errors::Result;
 use crate::request::{get, put};
@@ -28,109 +30,111 @@ pub struct Node {
 #[derive(Eq, Default, PartialEq, Serialize, Deserialize, Debug)]
 #[serde(default)]
 pub struct CatalogService {
-	#[serde(rename = "ID")]
+    #[serde(rename = "ID")]
     id: String,
-	#[serde(rename = "Node")]
+    #[serde(rename = "Node")]
     node: String,
-	#[serde(rename = "Address")]
+    #[serde(rename = "Address")]
     address: String,
-	#[serde(rename = "Datacenter")]
+    #[serde(rename = "Datacenter")]
     datacenter: String,
-	#[serde(rename = "TaggedAddresses")]
+    #[serde(rename = "TaggedAddresses")]
     tagged_addresses: HashMap<String, String>,
-	#[serde(rename = "NodeMeta")]
+    #[serde(rename = "NodeMeta")]
     node_meta: HashMap<String, String>,
-	#[serde(rename = "ServiceID")]
+    #[serde(rename = "ServiceID")]
     service_id: String,
-	#[serde(rename = "ServiceName")]
+    #[serde(rename = "ServiceName")]
     service_name: String,
-	#[serde(rename = "ServiceAddress")]
+    #[serde(rename = "ServiceAddress")]
     service_address: String,
-	#[serde(rename = "ServiceTags")]
+    #[serde(rename = "ServiceTags")]
     service_tags: Vec<String>,
-	#[serde(rename = "ServiceMeta")]
+    #[serde(rename = "ServiceMeta")]
     service_meta: HashMap<String, String>,
-	#[serde(rename = "ServicePort")]
+    #[serde(rename = "ServicePort")]
     service_port: u32,
-	#[serde(rename = "ServiceWeights")]
+    #[serde(rename = "ServiceWeights")]
     service_weights: Weights,
-	#[serde(rename = "ServiceEnableTagOverride")]
+    #[serde(rename = "ServiceEnableTagOverride")]
     service_enable_tag_override: bool,
-	#[serde(rename = "CreateIndex")]
+    #[serde(rename = "CreateIndex")]
     create_index: u64,
-	#[serde(rename = "ModifyIndex")]
+    #[serde(rename = "ModifyIndex")]
     modify_index: u64,
 }
 
 #[derive(Eq, Default, PartialEq, Serialize, Deserialize, Debug)]
 #[serde(default)]
 pub struct CatalogNode {
-	#[serde(rename = "Node")]
+    #[serde(rename = "Node")]
     node: Option<Node>,
-	#[serde(rename = "Services")]
+    #[serde(rename = "Services")]
     services: HashMap<String, AgentService>,
 }
 
 #[derive(Eq, Default, PartialEq, Serialize, Deserialize, Debug)]
 #[serde(default)]
 pub struct CatalogRegistration {
-	#[serde(rename = "Node")]
+    #[serde(rename = "Node")]
     id: String,
-	#[serde(rename = "Address")]
+    #[serde(rename = "Address")]
     node: String,
-	#[serde(rename = "Datacenter")]
+    #[serde(rename = "Datacenter")]
     address: String,
-	#[serde(rename = "TaggedAddresses")]
+    #[serde(rename = "TaggedAddresses")]
     tagged_addresses: HashMap<String, String>,
-	#[serde(rename = "NodeMeta")]
+    #[serde(rename = "NodeMeta")]
     node_meta: HashMap<String, String>,
-	#[serde(rename = "Service")]
+    #[serde(rename = "Service")]
     datacenter: String,
-	#[serde(rename = "Service")]
+    #[serde(rename = "Service")]
     service: Option<AgentService>,
-	#[serde(rename = "Check")]
+    #[serde(rename = "Check")]
     check: Option<AgentCheck>,
-	#[serde(rename = "SkipNodeUpdate")]
+    #[serde(rename = "SkipNodeUpdate")]
     skip_node_update: bool,
 }
 
 #[derive(Eq, Default, PartialEq, Serialize, Deserialize, Debug)]
 #[serde(default)]
 pub struct CatalogDeregistration {
-	#[serde(rename = "Node")]
+    #[serde(rename = "Node")]
     node: String,
-	#[serde(rename = "Address")]
+    #[serde(rename = "Address")]
     address: String,
-	#[serde(rename = "Datacenter")]
+    #[serde(rename = "Datacenter")]
     datacenter: String,
-	#[serde(rename = "ServiceID")]
+    #[serde(rename = "ServiceID")]
     service_id: String,
-	#[serde(rename = "CheckID")]
+    #[serde(rename = "CheckID")]
     check_id: String,
 }
 
+#[async_trait]
 pub trait Catalog {
-    fn register(
+    async fn register(
         &self,
         reg: &CatalogRegistration,
         q: Option<&WriteOptions>,
     ) -> Result<((), WriteMeta)>;
-    fn deregister(
+    async fn deregister(
         &self,
         dereg: &CatalogDeregistration,
         q: Option<&WriteOptions>,
     ) -> Result<((), WriteMeta)>;
-    fn datacenters(&self) -> Result<(Vec<String>, QueryMeta)>;
-    fn nodes(&self, q: Option<&QueryOptions>) -> Result<(Vec<Node>, QueryMeta)>;
-    fn services(
+    async fn datacenters(&self) -> Result<(Vec<String>, QueryMeta)>;
+    async fn nodes(&self, q: Option<&QueryOptions>) -> Result<(Vec<Node>, QueryMeta)>;
+    async fn services(
         &self,
         q: Option<&QueryOptions>,
     ) -> Result<(HashMap<String, Vec<String>>, QueryMeta)>;
 }
 
+#[async_trait]
 impl Catalog for Client {
     /// https://www.consul.io/api/catalog.html#register-entity
-    fn register(
+    async fn register(
         &self,
         reg: &CatalogRegistration,
         q: Option<&WriteOptions>,
@@ -142,10 +146,11 @@ impl Catalog for Client {
             HashMap::new(),
             q,
         )
+        .await
     }
 
     /// https://www.consul.io/api/catalog.html#deregister-entity
-    fn deregister(
+    async fn deregister(
         &self,
         dereg: &CatalogDeregistration,
         q: Option<&WriteOptions>,
@@ -157,27 +162,29 @@ impl Catalog for Client {
             HashMap::new(),
             q,
         )
+        .await
     }
 
     /// https://www.consul.io/api/catalog.html#list-datacenters
-    fn datacenters(&self) -> Result<(Vec<String>, QueryMeta)> {
+    async fn datacenters(&self) -> Result<(Vec<String>, QueryMeta)> {
         get(
             "/v1/catalog/datacenters",
             &self.config,
             HashMap::new(),
             None,
         )
+        .await
     }
 
     /// https://www.consul.io/api/catalog.html#list-nodes
-    fn nodes(&self, q: Option<&QueryOptions>) -> Result<(Vec<Node>, QueryMeta)> {
-        get("/v1/catalog/nodes", &self.config, HashMap::new(), q)
+    async fn nodes(&self, q: Option<&QueryOptions>) -> Result<(Vec<Node>, QueryMeta)> {
+        get("/v1/catalog/nodes", &self.config, HashMap::new(), q).await
     }
 
-    fn services(
+    async fn services(
         &self,
         q: Option<&QueryOptions>,
     ) -> Result<(HashMap<String, Vec<String>>, QueryMeta)> {
-        get("/v1/catalog/services", &self.config, HashMap::new(), q)
+        get("/v1/catalog/services", &self.config, HashMap::new(), q).await
     }
 }

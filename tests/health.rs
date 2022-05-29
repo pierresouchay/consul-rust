@@ -1,14 +1,14 @@
 extern crate consul;
 use consul::{Client, Config};
 
-#[test]
-fn health_test() {
+#[tokio::test]
+async fn health_test() {
     use consul::health::Health;
     let config = Config::new().unwrap();
     let client = Client::new(config);
     // An existing service for a agent in dev mode
     let r = client
-        .service("consul", Option::None, true, Option::None)
+        .service("consul", Option::None, true, Option::None).await
         .unwrap();
     let (snodes, meta) = (r.0, r.1);
     {
@@ -17,7 +17,7 @@ fn health_test() {
     }
     // A non existing, should be empty
     let r = client
-        .service("non-existing-service", Option::None, true, Option::None)
+        .service("non-existing-service", Option::None, true, Option::None).await
         .unwrap();
     let (snodes, meta) = (r.0, r.1);
     {

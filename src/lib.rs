@@ -19,8 +19,8 @@ use std::env;
 
 use std::time::Duration;
 
-use reqwest::blocking::Client as HttpClient;
-use reqwest::blocking::ClientBuilder;
+use reqwest::Client as HttpClient;
+use reqwest::ClientBuilder;
 
 use errors::{Result, ResultExt};
 

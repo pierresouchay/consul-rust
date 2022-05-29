@@ -1,19 +1,45 @@
+use async_trait::async_trait;
 use std::collections::HashMap;
+use std::future::Future;
 use url::Url;
 
 use std::str;
 use std::str::FromStr;
 use std::time::Instant;
 
-use reqwest::blocking::Client as HttpClient;
-use reqwest::blocking::RequestBuilder;
 use reqwest::header::HeaderValue;
+use reqwest::Client as HttpClient;
+use reqwest::RequestBuilder;
 use reqwest::StatusCode;
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 
 use crate::errors::{Result, ResultExt};
 use crate::{Config, QueryMeta, QueryOptions, WriteMeta, WriteOptions};
+
+#[async_trait]
+trait AndThenAsync<T: Send, E: Send> {
+    async fn and_then_async<U, F, Fut>(self, f: F) -> std::result::Result<U, E>
+    where
+        F: FnOnce(T) -> Fut + Send,
+        Fut: Future<Output = U> + Send,
+        Self: Sized;
+}
+
+#[async_trait]
+impl<T: Send, E: Send> AndThenAsync<T, E> for std::result::Result<T, E> {
+    async fn and_then_async<U, F, Fut>(self, f: F) -> std::result::Result<U, E>
+    where
+        F: FnOnce(T) -> Fut + Send,
+        Fut: Future<Output = U> + Send,
+        Self: Sized,
+    {
+        match self {
+            Ok(inner) => Ok(f(inner).await),
+            Err(e) => Err(e),
+        }
+    }
+}
 
 fn add_config_options(builder: RequestBuilder, config: &Config) -> RequestBuilder {
     match &config.token {
@@ -22,7 +48,7 @@ fn add_config_options(builder: RequestBuilder, config: &Config) -> RequestBuilde
     }
 }
 
-pub fn get_vec<R: DeserializeOwned>(
+pub async fn get_vec<R: DeserializeOwned>(
     path: &str,
     config: &Config,
     mut params: HashMap<String, String>,
@@ -49,10 +75,10 @@ pub fn get_vec<R: DeserializeOwned>(
         Url::parse_with_params(&url_str, params.iter()).chain_err(|| "Failed to parse URL")?;
     let start = Instant::now();
     let request_builder = add_config_options(config.http_client.get(url), &config);
-    let response = request_builder.send();
+    let response = request_builder.send().await;
     response
         .chain_err(|| "HTTP request to consul failed")
-        .and_then(|r| {
+        .and_then_async(|r| async {
             let x: Option<Result<u64>> = r
                 .headers()
                 .get("X-Consul-Index")
@@ -66,7 +92,9 @@ pub fn get_vec<R: DeserializeOwned>(
                         })
                 });
             let j = if r.status() != StatusCode::NOT_FOUND {
-                r.json().chain_err(|| "Failed to parse JSON response")?
+                r.json()
+                    .await
+                    .chain_err(|| "Failed to parse JSON response")?
             } else {
                 Vec::new()
             };
@@ -75,6 +103,7 @@ pub fn get_vec<R: DeserializeOwned>(
                 None => Ok((j, None)),
             }
         })
+        .await?
         .map(|x: (Vec<R>, Option<u64>)| {
             (
                 x.0,
@@ -86,7 +115,7 @@ pub fn get_vec<R: DeserializeOwned>(
         })
 }
 
-pub fn get<R: DeserializeOwned>(
+pub async fn get<R: DeserializeOwned>(
     path: &str,
     config: &Config,
     mut params: HashMap<String, String>,
@@ -113,10 +142,10 @@ pub fn get<R: DeserializeOwned>(
         Url::parse_with_params(&url_str, params.iter()).chain_err(|| "Failed to parse URL")?;
     let start = Instant::now();
     let request_builder = add_config_options(config.http_client.get(url), &config);
-    let response = request_builder.send();
+    let response = request_builder.send().await;
     response
         .chain_err(|| "HTTP request to consul failed")
-        .and_then(|r| {
+        .and_then_async(|r| async {
             let x: Option<Result<u64>> =
                 r.headers()
                     .get("X-Consul-Index")
@@ -129,12 +158,16 @@ pub fn get<R: DeserializeOwned>(
                                     .chain_err(|| "Failed to parse valid number for last index")
                             })
                     });
-            let j = r.json().chain_err(|| "Failed to parse JSON response")?;
+            let j = r
+                .json()
+                .await
+                .chain_err(|| "Failed to parse JSON response")?;
             match x {
                 Some(r) => Ok((j, Some(r?))),
                 None => Ok((j, None)),
             }
         })
+        .await?
         .map(|x: (R, Option<u64>)| {
             (
                 x.0,
@@ -146,14 +179,14 @@ pub fn get<R: DeserializeOwned>(
         })
 }
 
-pub fn delete<R: DeserializeOwned>(
+pub async fn delete<R: DeserializeOwned>(
     path: &str,
     config: &Config,
     params: HashMap<String, String>,
     options: Option<&WriteOptions>,
 ) -> Result<(R, WriteMeta)> {
     let req = |http_client: &HttpClient, url: Url| -> RequestBuilder { http_client.delete(url) };
-    write_with_body(path, None as Option<&()>, config, params, options, req)
+    write_with_body(path, None as Option<&()>, config, params, options, req).await
 }
 
 /*
@@ -166,7 +199,7 @@ pub fn post<t: Serialize, t: DeserializeOwned>(path: &str,
     write_with_body(path, body, config, options, req)
 }
 */
-pub fn put<T: Serialize, R: DeserializeOwned>(
+pub async fn put<T: Serialize, R: DeserializeOwned>(
     path: &str,
     body: Option<&T>,
     config: &Config,
@@ -174,10 +207,10 @@ pub fn put<T: Serialize, R: DeserializeOwned>(
     options: Option<&WriteOptions>,
 ) -> Result<(R, WriteMeta)> {
     let req = |http_client: &HttpClient, url: Url| -> RequestBuilder { http_client.put(url) };
-    write_with_body(path, body, config, params, options, req)
+    write_with_body(path, body, config, params, options, req).await
 }
 
-fn write_with_body<T: Serialize, R: DeserializeOwned, F>(
+async fn write_with_body<T: Serialize, R: DeserializeOwned, F>(
     path: &str,
     body: Option<&T>,
     config: &Config,
@@ -209,8 +242,10 @@ where
     let builder = add_config_options(builder, &config);
     builder
         .send()
+        .await
         .chain_err(|| "HTTP request to consul failed")
-        .and_then(|x| x.json().chain_err(|| "Failed to parse JSON"))
+        .and_then_async(|x| async { x.json().await.chain_err(|| "Failed to parse JSON") })
+        .await?
         .map(|x| {
             (
                 x,

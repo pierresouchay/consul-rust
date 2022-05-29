@@ -5,14 +5,13 @@ use consul::session::{Session, SessionEntry};
 use consul::{Client, Config};
 use rand::distributions::Alphanumeric;
 use rand::{thread_rng, Rng};
-use rstest::*;
 
-#[rstest]
-fn session_create_test() {
-    let (client, unique_test_identifier) = set_up();
+#[tokio::test]
+async fn session_create_test() {
+    let (client, unique_test_identifier) = set_up().await;
 
     assert_eq!(
-        get_number_of_session_entries_with_matching_name(&client, &unique_test_identifier),
+        get_number_of_session_entries_with_matching_name(&client, &unique_test_identifier).await,
         0
     );
 
@@ -21,58 +20,58 @@ fn session_create_test() {
         ..Default::default()
     };
 
-    let (created_session_entry, _) = client.create(&entry, None).unwrap();
+    let (created_session_entry, _) = client.create(&entry, None).await.unwrap();
 
     assert_eq!(
-        get_number_of_session_entries_with_matching_name(&client, &unique_test_identifier),
+        get_number_of_session_entries_with_matching_name(&client, &unique_test_identifier).await,
         1
     );
 
-    tear_down(&client, &created_session_entry.id.unwrap());
+    tear_down(&client, &created_session_entry.id.unwrap()).await;
 }
 
-#[rstest]
-fn session_destroy_test() {
-    let (client, unique_test_identifier) = set_up();
+#[tokio::test]
+async fn session_destroy_test() {
+    let (client, unique_test_identifier) = set_up().await;
 
     let entry = SessionEntry {
         name: Some(unique_test_identifier.to_string()),
         ..Default::default()
     };
 
-    let (created_session_entry, _) = client.create(&entry, None).unwrap();
+    let (created_session_entry, _) = client.create(&entry, None).await.unwrap();
 
     assert_eq!(
-        get_number_of_session_entries_with_matching_name(&client, &unique_test_identifier),
+        get_number_of_session_entries_with_matching_name(&client, &unique_test_identifier).await,
         1
     );
 
     let created_session_entry_id = created_session_entry.id.unwrap();
 
-    client.destroy(&created_session_entry_id, None).unwrap();
+    client.destroy(&created_session_entry_id, None).await.unwrap();
 
     assert_eq!(
-        get_number_of_session_entries_with_matching_name(&client, &unique_test_identifier),
+        get_number_of_session_entries_with_matching_name(&client, &unique_test_identifier).await,
         0
     );
 
-    tear_down(&client, &created_session_entry_id);
+    tear_down(&client, &created_session_entry_id).await;
 }
 
-#[rstest]
-fn session_info_test() {
-    let (client, unique_test_identifier) = set_up();
+#[tokio::test]
+async fn session_info_test() {
+    let (client, unique_test_identifier) = set_up().await;
 
     let entry = SessionEntry {
         name: Some(unique_test_identifier.to_string()),
         ..Default::default()
     };
 
-    let (created_session_entry, _) = client.create(&entry, None).unwrap();
+    let (created_session_entry, _) = client.create(&entry, None).await.unwrap();
 
     let created_session_entry_id = created_session_entry.id.unwrap();
 
-    let (session_entries, _) = client.info(&created_session_entry_id, None).unwrap();
+    let (session_entries, _) = client.info(&created_session_entry_id, None).await.unwrap();
 
     assert_eq!(session_entries.len(), 1);
 
@@ -83,12 +82,12 @@ fn session_info_test() {
         unique_test_identifier
     );
 
-    tear_down(&client, &created_session_entry_id);
+    tear_down(&client, &created_session_entry_id).await;
 }
 
-#[rstest]
-fn session_list_test() {
-    let (client, unique_test_identifier) = set_up();
+#[tokio::test]
+async fn session_list_test() {
+    let (client, unique_test_identifier) = set_up().await;
 
     let entry_names = vec![
         format!("{}-1", unique_test_identifier),
@@ -104,12 +103,12 @@ fn session_list_test() {
             ..Default::default()
         };
 
-        let (created_session_entry, _) = client.create(&entry, None).unwrap();
+        let (created_session_entry, _) = client.create(&entry, None).await.unwrap();
 
         session_ids.push(created_session_entry.id.unwrap());
     }
 
-    let (session_entries, _) = client.list(None).unwrap();
+    let (session_entries, _) = client.list(None).await.unwrap();
 
     let filtered_session_entries = session_entries
         .iter()
@@ -128,26 +127,26 @@ fn session_list_test() {
     assert_eq!(filtered_session_entry_names, entry_names);
 
     for session_id in session_ids {
-        tear_down(&client, &session_id);
+        tear_down(&client, &session_id).await;
     }
 }
 
-#[rstest]
-fn session_node_test() {
-    let (client, unique_test_identifier) = set_up();
+#[tokio::test]
+async fn session_node_test() {
+    let (client, unique_test_identifier) = set_up().await;
 
     let entry = SessionEntry {
         name: Some(unique_test_identifier.to_string()),
         ..Default::default()
     };
 
-    let (created_session_entry, _) = client.create(&entry, None).unwrap();
+    let (created_session_entry, _) = client.create(&entry, None).await.unwrap();
 
     let created_session_entry_id = created_session_entry.id.unwrap();
 
     let system_hostname = hostname::get().unwrap().into_string().unwrap();
 
-    let (session_entries, _) = client.node(&system_hostname, None).unwrap();
+    let (session_entries, _) = client.node(&system_hostname, None).await.unwrap();
 
     let filtered_session_entries: Vec<&SessionEntry> = session_entries
         .iter()
@@ -156,28 +155,28 @@ fn session_node_test() {
 
     assert_eq!(filtered_session_entries.len(), 1);
 
-    tear_down(&client, &created_session_entry_id);
+    tear_down(&client, &created_session_entry_id).await;
 }
 
-#[rstest]
-fn session_renew_test() {
-    let (client, unique_test_identifier) = set_up();
+#[tokio::test]
+async fn session_renew_test() {
+    let (client, unique_test_identifier) = set_up().await;
 
     let entry = SessionEntry {
         name: Some(unique_test_identifier),
         ..Default::default()
     };
 
-    let (created_session_entry, _) = client.create(&entry, None).unwrap();
+    let (created_session_entry, _) = client.create(&entry, None).await.unwrap();
 
     let created_session_entry_id = created_session_entry.id.unwrap();
 
-    client.renew(&created_session_entry_id, None).unwrap();
+    client.renew(&created_session_entry_id, None).await.unwrap();
 
-    tear_down(&client, &created_session_entry_id);
+    tear_down(&client, &created_session_entry_id).await;
 }
 
-fn set_up() -> (Client, String) {
+async fn set_up() -> (Client, String) {
     let config = Config::new().unwrap();
     let client = Client::new(config);
 
@@ -190,15 +189,15 @@ fn set_up() -> (Client, String) {
     (client, unique_test_identifier)
 }
 
-fn tear_down(client: &Client, session_id: &str) {
-    client.destroy(session_id, None).unwrap();
+async fn tear_down(client: &Client, session_id: &str) {
+    client.destroy(session_id, None).await.unwrap();
 }
 
-fn get_number_of_session_entries_with_matching_name(
+async fn get_number_of_session_entries_with_matching_name(
     client: &Client,
     unique_test_identifier: &str,
 ) -> usize {
-    let (session_entries, _) = client.list(None).unwrap();
+    let (session_entries, _) = client.list(None).await.unwrap();
 
     let filtered_session_entries: Vec<&SessionEntry> = session_entries
         .iter()
