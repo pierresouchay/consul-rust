@@ -11,14 +11,14 @@ fn kv_test() {
     assert!(r.0.is_empty());
 
     let pair = KVPair {
-        Key: String::from("testkey"),
-        Value: String::from("testvalue"),
+        key: String::from("testkey"),
+        value: String::from("testvalue"),
         ..Default::default()
     };
 
     assert!(client.put(&pair, None).unwrap().0);
 
-    let b64val = client.get("testkey", None).unwrap().0.unwrap().Value;
+    let b64val = client.get("testkey", None).unwrap().0.unwrap().value;
     let bytes = base64::decode(b64val).unwrap();
     assert_eq!(std::str::from_utf8(&bytes).unwrap(), "\"testvalue\"");
 

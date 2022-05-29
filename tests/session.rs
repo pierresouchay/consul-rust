@@ -17,7 +17,7 @@ fn session_create_test() {
     );
 
     let entry = SessionEntry {
-        Name: Some(unique_test_identifier.to_string()),
+        name: Some(unique_test_identifier.to_string()),
         ..Default::default()
     };
 
@@ -28,7 +28,7 @@ fn session_create_test() {
         1
     );
 
-    tear_down(&client, &created_session_entry.ID.unwrap());
+    tear_down(&client, &created_session_entry.id.unwrap());
 }
 
 #[rstest]
@@ -36,7 +36,7 @@ fn session_destroy_test() {
     let (client, unique_test_identifier) = set_up();
 
     let entry = SessionEntry {
-        Name: Some(unique_test_identifier.to_string()),
+        name: Some(unique_test_identifier.to_string()),
         ..Default::default()
     };
 
@@ -47,7 +47,7 @@ fn session_destroy_test() {
         1
     );
 
-    let created_session_entry_id = created_session_entry.ID.unwrap();
+    let created_session_entry_id = created_session_entry.id.unwrap();
 
     client.destroy(&created_session_entry_id, None).unwrap();
 
@@ -64,13 +64,13 @@ fn session_info_test() {
     let (client, unique_test_identifier) = set_up();
 
     let entry = SessionEntry {
-        Name: Some(unique_test_identifier.to_string()),
+        name: Some(unique_test_identifier.to_string()),
         ..Default::default()
     };
 
     let (created_session_entry, _) = client.create(&entry, None).unwrap();
 
-    let created_session_entry_id = created_session_entry.ID.unwrap();
+    let created_session_entry_id = created_session_entry.id.unwrap();
 
     let (session_entries, _) = client.info(&created_session_entry_id, None).unwrap();
 
@@ -79,7 +79,7 @@ fn session_info_test() {
     let session_entry = session_entries.get(0);
 
     assert_eq!(
-        *session_entry.as_ref().unwrap().Name.as_ref().unwrap(),
+        *session_entry.as_ref().unwrap().name.as_ref().unwrap(),
         unique_test_identifier
     );
 
@@ -100,27 +100,27 @@ fn session_list_test() {
 
     for entry_name in &entry_names {
         let entry = SessionEntry {
-            Name: Some(entry_name.to_string()),
+            name: Some(entry_name.to_string()),
             ..Default::default()
         };
 
         let (created_session_entry, _) = client.create(&entry, None).unwrap();
 
-        session_ids.push(created_session_entry.ID.unwrap());
+        session_ids.push(created_session_entry.id.unwrap());
     }
 
     let (session_entries, _) = client.list(None).unwrap();
 
     let filtered_session_entries = session_entries
         .iter()
-        .filter(|s| s.Name.as_ref().unwrap().contains(&unique_test_identifier))
+        .filter(|s| s.name.as_ref().unwrap().contains(&unique_test_identifier))
         .collect::<Vec<&SessionEntry>>();
 
     assert_eq!(filtered_session_entries.len(), 3);
 
     let mut filtered_session_entry_names = filtered_session_entries
         .iter()
-        .map(|s| s.Name.as_ref().unwrap().to_string())
+        .map(|s| s.name.as_ref().unwrap().to_string())
         .collect::<Vec<String>>();
 
     filtered_session_entry_names.sort();
@@ -137,13 +137,13 @@ fn session_node_test() {
     let (client, unique_test_identifier) = set_up();
 
     let entry = SessionEntry {
-        Name: Some(unique_test_identifier.to_string()),
+        name: Some(unique_test_identifier.to_string()),
         ..Default::default()
     };
 
     let (created_session_entry, _) = client.create(&entry, None).unwrap();
 
-    let created_session_entry_id = created_session_entry.ID.unwrap();
+    let created_session_entry_id = created_session_entry.id.unwrap();
 
     let system_hostname = hostname::get().unwrap().into_string().unwrap();
 
@@ -151,7 +151,7 @@ fn session_node_test() {
 
     let filtered_session_entries: Vec<&SessionEntry> = session_entries
         .iter()
-        .filter(|s| s.Name.as_ref().unwrap() == &unique_test_identifier)
+        .filter(|s| s.name.as_ref().unwrap() == &unique_test_identifier)
         .collect();
 
     assert_eq!(filtered_session_entries.len(), 1);
@@ -164,13 +164,13 @@ fn session_renew_test() {
     let (client, unique_test_identifier) = set_up();
 
     let entry = SessionEntry {
-        Name: Some(unique_test_identifier),
+        name: Some(unique_test_identifier),
         ..Default::default()
     };
 
     let (created_session_entry, _) = client.create(&entry, None).unwrap();
 
-    let created_session_entry_id = created_session_entry.ID.unwrap();
+    let created_session_entry_id = created_session_entry.id.unwrap();
 
     client.renew(&created_session_entry_id, None).unwrap();
 
@@ -202,7 +202,7 @@ fn get_number_of_session_entries_with_matching_name(
 
     let filtered_session_entries: Vec<&SessionEntry> = session_entries
         .iter()
-        .filter(|s| s.Name.as_ref().unwrap() == unique_test_identifier)
+        .filter(|s| s.name.as_ref().unwrap() == unique_test_identifier)
         .collect();
 
     filtered_session_entries.len()

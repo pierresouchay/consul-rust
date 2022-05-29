@@ -10,31 +10,44 @@ use crate::{Client, QueryMeta, QueryOptions, WriteMeta, WriteOptions};
 #[serde(default)]
 #[allow(clippy::upper_case_acronyms)]
 pub struct CAConfig {
-    Provider: String,
-    Config: Value,
-    CreateIndex: u64,
-    ModifyIndex: u64,
+	#[serde(rename = "Provider")]
+    provider: String,
+	#[serde(rename = "Config")]
+    config: Value,
+	#[serde(rename = "CreateIndex")]
+    create_index: u64,
+	#[serde(rename = "ModifyIndex")]
+    modify_index: u64,
 }
 
 #[derive(Default, Serialize, Deserialize, Debug)]
 #[serde(default)]
 #[allow(clippy::upper_case_acronyms)]
 pub struct CARootList {
-    ActiveRootID: String,
-    TrustDomain: String,
-    Roots: Vec<CARoot>,
+	#[serde(rename = "ActiveRootID")]
+    active_root_id: String,
+	#[serde(rename = "TrustDomain")]
+    trust_domain: String,
+	#[serde(rename = "Roots")]
+    roots: Vec<CARoot>,
 }
 
 #[derive(Eq, Default, PartialEq, Serialize, Deserialize, Debug)]
 #[serde(default)]
 #[allow(clippy::upper_case_acronyms)]
 pub struct CARoot {
-    ID: String,
-    Name: String,
-    RootCert: String,
-    Active: bool,
-    CreateIndex: u64,
-    ModifyIndex: u64,
+	#[serde(rename = "ID")]
+    id: String,
+	#[serde(rename = "Name")]
+    name: String,
+	#[serde(rename = "RootCert")]
+    root_cert: String,
+	#[serde(rename = "Active")]
+    active: bool,
+	#[serde(rename = "CreateIndex")]
+    create_index: u64,
+	#[serde(rename = "ModifyIndex")]
+    modify_index: u64,
 }
 
 #[allow(clippy::upper_case_acronyms)]

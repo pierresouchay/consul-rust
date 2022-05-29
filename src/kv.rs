@@ -9,13 +9,20 @@ use crate::{Client, QueryMeta, QueryOptions, WriteMeta, WriteOptions};
 #[serde(default)]
 #[allow(clippy::upper_case_acronyms)]
 pub struct KVPair {
-    pub Key: String,
-    pub CreateIndex: Option<u64>,
-    pub ModifyIndex: Option<u64>,
-    pub LockIndex: Option<u64>,
-    pub Flags: Option<u64>,
-    pub Value: String,
-    pub Session: Option<String>,
+    #[serde(rename = "Key")]
+    pub key: String,
+    #[serde(rename = "CreateIndex")]
+    pub createindex: Option<u64>,
+    #[serde(rename = "ModifyIndex")]
+    pub modifyindex: Option<u64>,
+    #[serde(rename = "LockIndex")]
+    pub lockindex: Option<u64>,
+    #[serde(rename = "Flags")]
+    pub flags: Option<u64>,
+    #[serde(rename = "Value")]
+    pub value: String,
+    #[serde(rename = "Session")]
+    pub session: Option<String>,
 }
 
 #[allow(clippy::upper_case_acronyms)]
@@ -31,15 +38,15 @@ pub trait KV {
 impl KV for Client {
     fn acquire(&self, pair: &KVPair, o: Option<&WriteOptions>) -> Result<(bool, WriteMeta)> {
         let mut params = HashMap::new();
-        if let Some(i) = pair.Flags {
+        if let Some(i) = pair.flags {
             if i != 0 {
                 params.insert(String::from("flags"), i.to_string());
             }
         }
-        if let Some(ref session) = pair.Session {
+        if let Some(ref session) = pair.session {
             params.insert(String::from("acquire"), session.to_owned());
-            let path = format!("/v1/kv/{}", pair.Key);
-            put(&path, Some(&pair.Value), &self.config, params, o)
+            let path = format!("/v1/kv/{}", pair.key);
+            put(&path, Some(&pair.value), &self.config, params, o)
         } else {
             Err(Error::from("Session flag is required to acquire lock"))
         }
@@ -68,26 +75,26 @@ impl KV for Client {
 
     fn put(&self, pair: &KVPair, o: Option<&WriteOptions>) -> Result<(bool, WriteMeta)> {
         let mut params = HashMap::new();
-        if let Some(i) = pair.Flags {
+        if let Some(i) = pair.flags {
             if i != 0 {
                 params.insert(String::from("flags"), i.to_string());
             }
         }
-        let path = format!("/v1/kv/{}", pair.Key);
-        put(&path, Some(&pair.Value), &self.config, params, o)
+        let path = format!("/v1/kv/{}", pair.key);
+        put(&path, Some(&pair.value), &self.config, params, o)
     }
 
     fn release(&self, pair: &KVPair, o: Option<&WriteOptions>) -> Result<(bool, WriteMeta)> {
         let mut params = HashMap::new();
-        if let Some(i) = pair.Flags {
+        if let Some(i) = pair.flags {
             if i != 0 {
                 params.insert(String::from("flags"), i.to_string());
             }
         }
-        if let Some(ref session) = pair.Session {
+        if let Some(ref session) = pair.session {
             params.insert(String::from("release"), session.to_owned());
-            let path = format!("/v1/kv/{}", pair.Key);
-            put(&path, Some(&pair.Value), &self.config, params, o)
+            let path = format!("/v1/kv/{}", pair.key);
+            put(&path, Some(&pair.value), &self.config, params, o)
         } else {
             Err(Error::from("Session flag is required to release a lock"))
         }

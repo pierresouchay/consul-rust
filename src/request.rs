@@ -157,7 +157,7 @@ pub fn delete<R: DeserializeOwned>(
 }
 
 /*
-pub fn post<T: Serialize, R: DeserializeOwned>(path: &str,
+pub fn post<t: Serialize, t: DeserializeOwned>(path: &str,
                                                body: Option<&T>,
                                                config: &Config,
                                                options: Option<&WriteOptions>)

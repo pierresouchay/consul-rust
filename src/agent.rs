@@ -7,43 +7,70 @@ use crate::Client;
 #[derive(Clone, Default, Eq, PartialEq, Serialize, Deserialize, Debug)]
 #[serde(default)]
 pub struct AgentCheck {
-    pub Node: String,
-    pub CheckID: String,
-    pub Name: String,
-    pub Status: String,
-    pub Notes: String,
-    pub Output: String,
-    pub ServiceID: String,
-    pub ServiceName: String,
+    #[serde(rename = "Node")]
+    pub node: String,
+    #[serde(rename = "CheckID")]
+    pub check_id: String,
+    #[serde(rename = "Name")]
+    pub name: String,
+    #[serde(rename = "Status")]
+    pub status: String,
+    #[serde(rename = "Notes")]
+    pub notes: String,
+    #[serde(rename = "Output")]
+    pub output: String,
+    #[serde(rename = "ServiceID")]
+    pub service_id: String,
+    #[serde(rename = "ServiceName")]
+    pub service_name: String,
 }
 
 #[derive(Clone, Default, Eq, PartialEq, Serialize, Deserialize, Debug)]
 #[serde(default)]
 pub struct AgentMember {
-    pub Name: String,
-    pub Addr: String,
-    pub Port: u16,
-    pub Tags: HashMap<String, String>,
-    pub pubStatus: usize,
-    pub ProtocolMin: u8,
-    pub ProtocolMax: u8,
-    pub ProtocolCur: u8,
-    pub DelegateMin: u8,
-    pub DelegateMax: u8,
-    pub DelegateCur: u8,
+    #[serde(rename = "Name")]
+    pub name: String,
+    #[serde(rename = "Addr")]
+    pub addr: String,
+    #[serde(rename = "Port")]
+    pub port: u16,
+    #[serde(rename = "Tags")]
+    pub tags: HashMap<String, String>,
+    #[serde(rename = "PubStatus")]
+    pub pub_status: usize,
+    #[serde(rename = "ProtocolMin")]
+    pub protocol_min: u8,
+    #[serde(rename = "ProtocolMax")]
+    pub protocol_max: u8,
+    #[serde(rename = "ProtocolCur")]
+    pub protocol_cur: u8,
+    #[serde(rename = "DelegateMin")]
+    pub delegate_min: u8,
+    #[serde(rename = "DelegateMax")]
+    pub delegate_max: u8,
+    #[serde(rename = "DelegateCur")]
+    pub delegate_cur: u8,
 }
 
 #[derive(Eq, Default, PartialEq, Serialize, Deserialize, Debug)]
 #[serde(default)]
 pub struct AgentService {
-    pub ID: String,
-    pub Service: String,
-    pub Tags: Option<Vec<String>>,
-    pub Port: u16,
-    pub Address: String,
-    pub EnableTagOverride: bool,
-    pub CreateIndex: u64,
-    pub ModifyIndex: u64,
+    #[serde(rename = "ID")]
+    pub id: String,
+    #[serde(rename = "Service")]
+    pub service: String,
+    #[serde(rename = "Tags")]
+    pub tags: Option<Vec<String>>,
+    #[serde(rename = "Port")]
+    pub port: u16,
+    #[serde(rename = "Address")]
+    pub address: String,
+    #[serde(rename = "EnableTagOverride")]
+    pub enable_tag_override: bool,
+    #[serde(rename = "CreateIndex")]
+    pub create_index: u64,
+    #[serde(rename = "ModifyIndex")]
+    pub modify_index: u64,
 }
 
 //I haven't implemetned https://www.consul.io/api/agent.html#read-configuration

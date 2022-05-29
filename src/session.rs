@@ -8,20 +8,29 @@ use crate::{Client, QueryMeta, QueryOptions, WriteMeta, WriteOptions};
 #[serde(default)]
 #[allow(clippy::upper_case_acronyms)]
 pub struct SessionID {
-    pub ID: String,
+    #[serde(rename = "ID")]
+    pub id: String,
 }
 
 #[derive(Clone, Default, Eq, PartialEq, Serialize, Deserialize, Debug)]
 #[serde(default)]
 pub struct SessionEntry {
-    pub CreateIndex: Option<u64>,
-    pub ID: Option<String>,
-    pub Name: Option<String>,
-    pub Node: Option<String>,
-    pub LockDelay: Option<u64>, //TODO: Change this to a Durations
-    pub Behavior: Option<String>,
-    pub Checks: Option<Vec<String>>,
-    pub TTL: Option<String>,
+    #[serde(rename = "CreateIndex")]
+    pub createindex: Option<u64>,
+    #[serde(rename = "ID")]
+    pub id: Option<String>,
+    #[serde(rename = "Name")]
+    pub name: Option<String>,
+    #[serde(rename = "Node")]
+    pub node: Option<String>,
+    #[serde(rename = "LockDelay")]
+    pub lockdelay: Option<u64>, //delay: Change this to a Durations
+    #[serde(rename = "Behavior")]
+    pub behavior: Option<String>,
+    #[serde(rename = "Checks")]
+    pub checks: Option<Vec<String>>,
+    #[serde(rename = "TTL")]
+    pub ttl: Option<String>,
 }
 
 pub trait Session {
