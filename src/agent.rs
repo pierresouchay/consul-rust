@@ -7,47 +7,68 @@ use async_trait::async_trait;
 use crate::{
     errors::Result,
     request::{get, put},
-    Client, sealed::Sealed,
+    sealed::Sealed,
+    Client,
 };
 
 #[derive(Clone, Default, Eq, PartialEq, Serialize, Deserialize, Debug)]
 #[serde(default)]
 pub struct AgentCheck {
+	/// The node the service is running on.
     #[serde(rename = "Node")]
     pub node: String,
+	/// The ID of the service within the agent.
     #[serde(rename = "CheckID")]
     pub check_id: String,
+	/// The name of the service.
     #[serde(rename = "Name")]
     pub name: String,
+	/// The status of the check.
     #[serde(rename = "Status")]
     pub status: String,
+	/// Notes attached to this check.
     #[serde(rename = "Notes")]
     pub notes: String,
+	/// Output of the check.
     #[serde(rename = "Output")]
     pub output: String,
+	/// The ID of the service.
     #[serde(rename = "ServiceID")]
     pub service_id: String,
+	/// The name of the service.
     #[serde(rename = "ServiceName")]
     pub service_name: String,
 }
 
+/// A member within the cluster gossip pool.
+///
+/// Due to the nature of gossip, this is eventually consistent: the results may
+/// differ by agent.
 #[derive(Clone, Default, Eq, PartialEq, Serialize, Deserialize, Debug)]
 #[serde(default)]
 pub struct AgentMember {
+	/// The name of the agent.
     #[serde(rename = "Name")]
     pub name: String,
+	/// The address of the agent.
     #[serde(rename = "Addr")]
     pub addr: String,
+	/// The port of the agent.
     #[serde(rename = "Port")]
     pub port: u16,
+	/// The tags assigned to this agent.
     #[serde(rename = "Tags")]
     pub tags: HashMap<String, String>,
-    #[serde(rename = "PubStatus")]
-    pub pub_status: usize,
+	/// The status of this agent.
+    #[serde(rename = "Status")]
+    pub status: usize,
+	/// The minimum protocol version this agent supports.
     #[serde(rename = "ProtocolMin")]
     pub protocol_min: u8,
+	/// The maximum protocol version this agent supports.
     #[serde(rename = "ProtocolMax")]
     pub protocol_max: u8,
+	/// The version of the agent.
     #[serde(rename = "ProtocolCur")]
     pub protocol_cur: u8,
     #[serde(rename = "DelegateMin")]
