@@ -100,7 +100,7 @@ pub struct CatalogNode {
     /// The node stored in the catalog.
     #[serde(rename = "Node")]
     node: Option<Node>,
-	/// The services associated with the node.
+    /// The services associated with the node.
     #[serde(rename = "Services")]
     services: HashMap<String, AgentService>,
 }
@@ -149,20 +149,20 @@ pub struct CatalogRegistration {
 #[derive(Eq, Default, PartialEq, Serialize, Deserialize, Debug)]
 #[serde(default)]
 pub struct CatalogDeregistration {
-	/// Specifies the node ID to deregister.
+    /// Specifies the node ID to deregister.
     #[serde(rename = "Node")]
     node: String,
-	/// The address of the node.
+    /// The address of the node.
     #[serde(rename = "Address")]
     address: String,
-	/// Specifies the datacenter, which defaults to the agent's datacenter if
-	/// not provided.
+    /// Specifies the datacenter, which defaults to the agent's datacenter if
+    /// not provided.
     #[serde(rename = "Datacenter")]
     datacenter: String,
-	/// Specifies the service ID to deregister.
+    /// Specifies the service ID to deregister.
     #[serde(rename = "ServiceID")]
     service_id: String,
-	/// Specifies the check ID to deregister.
+    /// Specifies the check ID to deregister.
     #[serde(rename = "CheckID")]
     check_id: String,
 }
