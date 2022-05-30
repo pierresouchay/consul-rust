@@ -5,6 +5,7 @@ use async_trait::async_trait;
 use crate::{
     errors::Result,
     request::{get, put},
+    sealed::Sealed,
     Client, QueryMeta, QueryOptions, WriteMeta, WriteOptions,
 };
 
@@ -38,7 +39,7 @@ pub struct SessionEntry {
 }
 
 #[async_trait]
-pub trait Session {
+pub trait Session: Sealed {
     async fn create(
         &self,
         session: &SessionEntry,

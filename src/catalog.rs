@@ -6,6 +6,7 @@ use crate::{
     agent::{AgentCheck, AgentService},
     errors::Result,
     request::{get, put},
+    sealed::Sealed,
     Client, QueryMeta, QueryOptions, WriteMeta, WriteOptions,
 };
 
@@ -114,7 +115,7 @@ pub struct CatalogDeregistration {
 }
 
 #[async_trait]
-pub trait Catalog {
+pub trait Catalog: Sealed {
     async fn register(
         &self,
         reg: &CatalogRegistration,
@@ -135,7 +136,12 @@ pub trait Catalog {
 
 #[async_trait]
 impl Catalog for Client {
-    /// https://www.consul.io/api/catalog.html#register-entity
+	/// This method is a low-level mechanism for registering or updating
+    /// entries in the catalog. It is usually preferable to instead use the
+    /// agent endpoints for registration as they are simpler and perform
+    /// anti-entropy.
+	/// 
+	/// For more information, consult https://www.consul.io/api-docs/catalog#register-entity.
     async fn register(
         &self,
         reg: &CatalogRegistration,

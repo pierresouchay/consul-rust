@@ -5,6 +5,7 @@ use async_trait::async_trait;
 use crate::{
     errors::{Error, Result},
     request::{delete, get, get_vec, put},
+    sealed::Sealed,
     Client, QueryMeta, QueryOptions, WriteMeta, WriteOptions,
 };
 
@@ -29,7 +30,7 @@ pub struct KVPair {
 }
 
 #[async_trait]
-pub trait KV {
+pub trait KV: Sealed {
     async fn acquire(&self, _: &KVPair, _: Option<&WriteOptions>) -> Result<(bool, WriteMeta)>;
     async fn delete(&self, _: &str, _: Option<&WriteOptions>) -> Result<(bool, WriteMeta)>;
     async fn get(&self, _: &str, _: Option<&QueryOptions>) -> Result<(Option<KVPair>, QueryMeta)>;

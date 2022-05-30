@@ -6,6 +6,7 @@ use serde_json::Value;
 use crate::{
     errors::Result,
     request::{get, put},
+    sealed::Sealed,
     Client, QueryMeta, QueryOptions, WriteMeta, WriteOptions,
 };
 
@@ -54,7 +55,7 @@ pub struct CARoot {
 }
 
 #[async_trait]
-pub trait ConnectCA {
+pub trait ConnectCA: Sealed {
     async fn ca_roots(&self, q: Option<&QueryOptions>) -> Result<(CARootList, QueryMeta)>;
     async fn ca_get_config(&self, q: Option<&QueryOptions>) -> Result<(CAConfig, QueryMeta)>;
     async fn ca_set_config(

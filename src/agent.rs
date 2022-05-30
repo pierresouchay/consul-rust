@@ -14,28 +14,28 @@ use crate::{
 #[derive(Clone, Default, Eq, PartialEq, Serialize, Deserialize, Debug)]
 #[serde(default)]
 pub struct AgentCheck {
-	/// The node the service is running on.
+    /// The node the service is running on.
     #[serde(rename = "Node")]
     pub node: String,
-	/// The ID of the service within the agent.
+    /// The ID of the service within the agent.
     #[serde(rename = "CheckID")]
     pub check_id: String,
-	/// The name of the service.
+    /// The name of the service.
     #[serde(rename = "Name")]
     pub name: String,
-	/// The status of the check.
+    /// The status of the check.
     #[serde(rename = "Status")]
     pub status: String,
-	/// Notes attached to this check.
+    /// Notes attached to this check.
     #[serde(rename = "Notes")]
     pub notes: String,
-	/// Output of the check.
+    /// Output of the check.
     #[serde(rename = "Output")]
     pub output: String,
-	/// The ID of the service.
+    /// The ID of the service.
     #[serde(rename = "ServiceID")]
     pub service_id: String,
-	/// The name of the service.
+    /// The name of the service.
     #[serde(rename = "ServiceName")]
     pub service_name: String,
 }
@@ -47,28 +47,28 @@ pub struct AgentCheck {
 #[derive(Clone, Default, Eq, PartialEq, Serialize, Deserialize, Debug)]
 #[serde(default)]
 pub struct AgentMember {
-	/// The name of the agent.
+    /// The name of the agent.
     #[serde(rename = "Name")]
     pub name: String,
-	/// The address of the agent.
+    /// The address of the agent.
     #[serde(rename = "Addr")]
     pub addr: String,
-	/// The port of the agent.
+    /// The port of the agent.
     #[serde(rename = "Port")]
     pub port: u16,
-	/// The tags assigned to this agent.
+    /// The tags assigned to this agent.
     #[serde(rename = "Tags")]
     pub tags: HashMap<String, String>,
-	/// The status of this agent.
+    /// The status of this agent.
     #[serde(rename = "Status")]
     pub status: usize,
-	/// The minimum protocol version this agent supports.
+    /// The minimum protocol version this agent supports.
     #[serde(rename = "ProtocolMin")]
     pub protocol_min: u8,
-	/// The maximum protocol version this agent supports.
+    /// The maximum protocol version this agent supports.
     #[serde(rename = "ProtocolMax")]
     pub protocol_max: u8,
-	/// The version of the agent.
+    /// The version of the agent.
     #[serde(rename = "ProtocolCur")]
     pub protocol_cur: u8,
     #[serde(rename = "DelegateMin")]
