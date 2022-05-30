@@ -6,7 +6,7 @@ use crate::{
     errors::{Error, Result},
     request::{delete, get, get_vec, put},
     sealed::Sealed,
-    Client, QueryMeta, QueryOptions, WriteMeta, WriteOptions,
+    Client, payload::{WriteOptions, WriteMeta, QueryOptions, QueryMeta},
 };
 
 #[derive(Clone, Default, Eq, PartialEq, Serialize, Deserialize, Debug)]

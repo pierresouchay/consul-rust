@@ -3,8 +3,7 @@ use std::collections::HashMap;
 use async_trait::async_trait;
 
 use crate::{
-    agent::AgentService, errors::Result, request::get, sealed::Sealed, Client, QueryMeta,
-    QueryOptions,
+    agent::AgentService, errors::Result, request::get, sealed::Sealed, Client, payload::{QueryOptions, QueryMeta},
 };
 
 #[derive(Eq, Default, PartialEq, Serialize, Deserialize, Debug)]

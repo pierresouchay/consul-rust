@@ -8,6 +8,8 @@
 * Rustify variable names.
 * Improved documentation library-wide.
 * Sealed internal trait implementations to prevent re-implementation.
+* Export all traits in crate root.
+* Move payload types into `crate::payload`.
 
 ## 0.4.2
 

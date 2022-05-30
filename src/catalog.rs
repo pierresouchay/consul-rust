@@ -3,16 +3,17 @@ use std::collections::HashMap;
 use async_trait::async_trait;
 
 use crate::{
-    agent::{AgentCheck, AgentService},
+    agent::AgentService,
     errors::Result,
+    payload::{CatalogDeregistrationPayload, CatalogRegistrationPayload, WriteOptions, WriteMeta, QueryMeta, QueryOptions},
     request::{get, put},
     sealed::Sealed,
-    Client, QueryMeta, QueryOptions, WriteMeta, WriteOptions,
+    Client
 };
 
 #[derive(Eq, Default, PartialEq, Serialize, Deserialize, Debug)]
 #[serde(default)]
-pub struct Weights {
+pub struct ServiceWeights {
     passing: u32,
     warning: u32,
 }
@@ -84,7 +85,7 @@ pub struct CatalogService {
     #[serde(rename = "ServicePort")]
     service_port: u32,
     #[serde(rename = "ServiceWeights")]
-    service_weights: Weights,
+    service_weights: ServiceWeights,
     #[serde(rename = "ServiceEnableTagOverride")]
     service_enable_tag_override: bool,
     #[serde(rename = "CreateIndex")]
@@ -104,69 +105,6 @@ pub struct CatalogNode {
     #[serde(rename = "Services")]
     services: HashMap<String, AgentService>,
 }
-
-/// Datatype containing payload data for the `register` method.
-///
-/// For more information, consult https://www.consul.io/api-docs/catalog#json-request-body-schema.
-#[derive(Eq, Default, PartialEq, Serialize, Deserialize, Debug)]
-#[serde(default)]
-pub struct CatalogRegistration {
-    /// An optional UUID to assign to the node. This must be a 36-character
-    /// UUID-formatted string.
-    #[serde(rename = "Node")]
-    id: String,
-    /// Specifies the node ID to register.
-    #[serde(rename = "Address")]
-    node: String,
-    /// Specifies the address to register.
-    #[serde(rename = "Datacenter")]
-    address: String,
-    /// Specifies the tagged addresses.
-    #[serde(rename = "TaggedAddresses")]
-    tagged_addresses: HashMap<String, String>,
-    /// Specifies arbitrary KV metadata pairs for filtering purposes.
-    #[serde(rename = "NodeMeta")]
-    node_meta: HashMap<String, String>,
-    /// Specifies the datacenter, which defaults to the agent's datacenter if
-    /// not provided.
-    #[serde(rename = "Datacenter")]
-    datacenter: String,
-    /// Specifies to register a service. If `id` is not provided, it will be
-    /// defaulted to the value of the Service.Service property. Only one service
-    /// with a given ID may be present per node.
-    #[serde(rename = "Service")]
-    service: Option<AgentService>,
-    /// Specifies to register a check.
-    #[serde(rename = "Check")]
-    check: Option<AgentCheck>,
-    /// Specifies whether to skip updating the node's information in the
-    /// registration.
-    #[serde(rename = "SkipNodeUpdate")]
-    skip_node_update: bool,
-}
-
-/// Request payload datatype for the [Catalog::deregister] method.
-#[derive(Eq, Default, PartialEq, Serialize, Deserialize, Debug)]
-#[serde(default)]
-pub struct CatalogDeregistration {
-    /// Specifies the node ID to deregister.
-    #[serde(rename = "Node")]
-    node: String,
-    /// The address of the node.
-    #[serde(rename = "Address")]
-    address: String,
-    /// Specifies the datacenter, which defaults to the agent's datacenter if
-    /// not provided.
-    #[serde(rename = "Datacenter")]
-    datacenter: String,
-    /// Specifies the service ID to deregister.
-    #[serde(rename = "ServiceID")]
-    service_id: String,
-    /// Specifies the check ID to deregister.
-    #[serde(rename = "CheckID")]
-    check_id: String,
-}
-
 #[async_trait]
 pub trait Catalog: Sealed {
     /// This method is a low-level mechanism for registering or updating
@@ -177,7 +115,7 @@ pub trait Catalog: Sealed {
     /// For more information, consult https://www.consul.io/api-docs/catalog#register-entity.
     async fn register(
         &self,
-        reg: &CatalogRegistration,
+        reg: &CatalogRegistrationPayload,
         q: Option<&WriteOptions>,
     ) -> Result<((), WriteMeta)>;
 
@@ -189,7 +127,7 @@ pub trait Catalog: Sealed {
     /// For more information, consult https://www.consul.io/api/catalog.html#deregister-entity.
     async fn deregister(
         &self,
-        dereg: &CatalogDeregistration,
+        dereg: &CatalogDeregistrationPayload,
         q: Option<&WriteOptions>,
     ) -> Result<((), WriteMeta)>;
 
@@ -221,7 +159,7 @@ pub trait Catalog: Sealed {
 impl Catalog for Client {
     async fn register(
         &self,
-        reg: &CatalogRegistration,
+        reg: &CatalogRegistrationPayload,
         q: Option<&WriteOptions>,
     ) -> Result<((), WriteMeta)> {
         put("/v1/session/create", Some(reg), &self.config, HashMap::new(), q).await
@@ -229,7 +167,7 @@ impl Catalog for Client {
 
     async fn deregister(
         &self,
-        dereg: &CatalogDeregistration,
+        dereg: &CatalogDeregistrationPayload,
         q: Option<&WriteOptions>,
     ) -> Result<((), WriteMeta)> {
         put("/v1/catalog/deregister", Some(dereg), &self.config, HashMap::new(), q).await
