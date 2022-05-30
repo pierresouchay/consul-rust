@@ -121,29 +121,57 @@ pub struct AgentService {
 /// For more information consult the API docs at https://www.consul.io/api-docs/agent.
 #[async_trait]
 pub trait Agent: Sealed {
-    async fn checks(&self) -> Result<HashMap<String, AgentCheck>>;
-    async fn members(&self, wan: bool) -> Result<AgentMember>;
-    async fn reload(&self) -> Result<()>;
-    async fn maintenance_mode(&self, enable: bool, reason: Option<&str>) -> Result<()>;
-    async fn join(&self, address: &str, wan: bool) -> Result<()>;
-    async fn leave(&self) -> Result<()>;
-    async fn force_leave(&self) -> Result<()>;
-}
-
-#[async_trait]
-impl Agent for Client {
     /// This method returns all checks that are registered with the local
     /// agent.
     ///
     /// For more information, consult https://www.consul.io/api/agent/check.html#list-checks.
-    async fn checks(&self) -> Result<HashMap<String, AgentCheck>> {
-        get("/v1/agent/checks", &self.config, HashMap::new(), None).await.map(|x| x.0)
-    }
+    async fn checks(&self) -> Result<HashMap<String, AgentCheck>>;
+
     /// This method returns the members the agent sees in the cluster gossip
     /// pool. Due to the nature of gossip, this is eventually consistent: the
     /// results may differ by agent.
     ///
     /// For more information, consult https://www.consul.io/api-docs/agent#list-members.
+    async fn members(&self, wan: bool) -> Result<AgentMember>;
+
+    /// This method instructs the agent to reload its configuration.
+    ///
+    /// For more information, consult https://www.consul.io/api-docs/agent#reload-agent.
+    async fn reload(&self) -> Result<()>;
+
+    /// This method places the agent into "maintenance mode". During maintenance
+    /// mode, the node will be marked as unavailable and will not be present in
+    /// DNS or API queries.
+    ///
+    /// For more information, consult https://www.consul.io/api-docs/agent#enable-maintenance-mode.
+    async fn maintenance_mode(&self, enable: bool, reason: Option<&str>) -> Result<()>;
+
+    /// This method instructs the agent to attempt to connect to a given
+    /// address.
+    ///
+    /// For more information, consult https://www.consul.io/api-docs/agent#join-agent.
+    async fn join(&self, address: &str, wan: bool) -> Result<()>;
+
+    /// This endpoint triggers a graceful leave and shutdown of the agent. It is
+    /// used to ensure other nodes see the agent as "left" instead of "failed".
+    ///
+    /// For more information, consult https://www.consul.io/api/agent.html#graceful-leave-and-shutdown.
+    async fn leave(&self) -> Result<()>;
+
+    /// This endpoint instructs the agent to force a node into the left state in
+    /// the LAN and WAN gossip pools. If a node fails unexpectedly, then it will
+    /// be in a failed state.
+    ///
+    /// For more information, consult https://www.consul.io/api-docs/agent#force-leave-and-shutdown.
+    async fn force_leave(&self) -> Result<()>;
+}
+
+#[async_trait]
+impl Agent for Client {
+    async fn checks(&self) -> Result<HashMap<String, AgentCheck>> {
+        get("/v1/agent/checks", &self.config, HashMap::new(), None).await.map(|x| x.0)
+    }
+
     async fn members(&self, wan: bool) -> Result<AgentMember> {
         let mut params = HashMap::new();
         if wan {
@@ -151,20 +179,13 @@ impl Agent for Client {
         }
         get("/v1/agent/members", &self.config, params, None).await.map(|x| x.0)
     }
-    /// This method instructs the agent to reload its configuration.
-    ///
-    /// For more information, consult https://www.consul.io/api-docs/agent#reload-agent.
+
     async fn reload(&self) -> Result<()> {
         put("/v1/agent/reload", None as Option<&()>, &self.config, HashMap::new(), None)
             .await
             .map(|x| x.0)
     }
 
-    /// This method places the agent into "maintenance mode". During maintenance
-    /// mode, the node will be marked as unavailable and will not be present in
-    /// DNS or API queries.
-    ///
-    /// For more information, consult https://www.consul.io/api-docs/agent#enable-maintenance-mode.
     async fn maintenance_mode(&self, enable: bool, reason: Option<&str>) -> Result<()> {
         let mut params = HashMap::new();
         let enable_str = if enable { String::from("true") } else { String::from("false") };
@@ -176,10 +197,7 @@ impl Agent for Client {
             .await
             .map(|x| x.0)
     }
-    /// This method instructs the agent to attempt to connect to a given
-    /// address.
-    ///
-    /// For more information, consult https://www.consul.io/api-docs/agent#join-agent.
+
     async fn join(&self, address: &str, wan: bool) -> Result<()> {
         let mut params = HashMap::new();
 
@@ -190,21 +208,12 @@ impl Agent for Client {
         put(&path, None as Option<&()>, &self.config, params, None).await.map(|x| x.0)
     }
 
-    /// This endpoint triggers a graceful leave and shutdown of the agent. It is
-    /// used to ensure other nodes see the agent as "left" instead of "failed".
-    ///
-    /// For more information, consult https://www.consul.io/api/agent.html#graceful-leave-and-shutdown.
     async fn leave(&self) -> Result<()> {
         put("/v1/agent/leave", None as Option<&()>, &self.config, HashMap::new(), None)
             .await
             .map(|x| x.0)
     }
 
-    /// This endpoint instructs the agent to force a node into the left state in
-    /// the LAN and WAN gossip pools. If a node fails unexpectedly, then it will
-    /// be in a failed state.
-    ///
-    /// For more information, consult https://www.consul.io/api-docs/agent#force-leave-and-shutdown.
     async fn force_leave(&self) -> Result<()> {
         put("/v1/agent/force-leave", None as Option<&()>, &self.config, HashMap::new(), None)
             .await
