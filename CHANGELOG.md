@@ -6,7 +6,7 @@
 
 * Switch to asynchronous Reqwest clients.
 * Rustify variable names.
-* Added documentation.
+* Improved documentation library-wide.
 * Sealed internal trait implementations to prevent re-implementation.
 
 ## 0.4.2

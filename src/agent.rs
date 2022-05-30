@@ -1,4 +1,14 @@
 //! Defines data-types relating to Agents.
+//!
+//! This brief paragraph provides an overview of the Consul agent, which is the
+//! core process of Consul. The agent maintains membership information,
+//! registers services, runs checks, responds to queries, and more. The agent
+//! must run on every node that is part of a Consul cluster.
+//!
+//! The `Agent` trait defined in this crate can be used to interact with the
+//! Consul HTTP API to retrieve information about the running agent.
+//!
+//! For more information on the Agent, see https://www.consul.io/docs/agent.
 
 use std::collections::HashMap;
 

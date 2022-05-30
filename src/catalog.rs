@@ -198,8 +198,8 @@ impl Catalog for Client {
     }
 
     /// This endpoint returns the services registered in a given datacenter.
-	/// 
-	/// For more information, consult https://www.consul.io/api-docs/catalog#list-services.
+    ///
+    /// For more information, consult https://www.consul.io/api-docs/catalog#list-services.
     async fn services(
         &self,
         q: Option<&QueryOptions>,
