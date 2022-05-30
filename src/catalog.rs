@@ -76,25 +76,42 @@ pub struct CatalogNode {
     services: HashMap<String, AgentService>,
 }
 
+/// Datatype containing payload data for the `register` method.
+///
+/// For more information, consult https://www.consul.io/api-docs/catalog#json-request-body-schema.
 #[derive(Eq, Default, PartialEq, Serialize, Deserialize, Debug)]
 #[serde(default)]
 pub struct CatalogRegistration {
+    /// An optional UUID to assign to the node. This must be a 36-character
+    /// UUID-formatted string.
     #[serde(rename = "Node")]
     id: String,
+    /// Specifies the node ID to register.
     #[serde(rename = "Address")]
     node: String,
+    /// Specifies the address to register.
     #[serde(rename = "Datacenter")]
     address: String,
+    /// Specifies the tagged addresses.
     #[serde(rename = "TaggedAddresses")]
     tagged_addresses: HashMap<String, String>,
+    /// Specifies arbitrary KV metadata pairs for filtering purposes.
     #[serde(rename = "NodeMeta")]
     node_meta: HashMap<String, String>,
-    #[serde(rename = "Service")]
+    /// Specifies the datacenter, which defaults to the agent's datacenter if
+    /// not provided.
+    #[serde(rename = "Datacenter")]
     datacenter: String,
+    /// Specifies to register a service. If `id` is not provided, it will be
+    /// defaulted to the value of the Service.Service property. Only one service
+    /// with a given ID may be present per node.
     #[serde(rename = "Service")]
     service: Option<AgentService>,
+    /// Specifies to register a check.
     #[serde(rename = "Check")]
     check: Option<AgentCheck>,
+    /// Specifies whether to skip updating the node's information in the
+    /// registration.
     #[serde(rename = "SkipNodeUpdate")]
     skip_node_update: bool,
 }
@@ -136,12 +153,12 @@ pub trait Catalog: Sealed {
 
 #[async_trait]
 impl Catalog for Client {
-	/// This method is a low-level mechanism for registering or updating
-    /// entries in the catalog. It is usually preferable to instead use the
-    /// agent endpoints for registration as they are simpler and perform
-    /// anti-entropy.
-	/// 
-	/// For more information, consult https://www.consul.io/api-docs/catalog#register-entity.
+    /// This method is a low-level mechanism for registering or updating
+    /// entries in the catalog. It is usually preferable to instead use methods
+    /// defined in the `Agent` trait for registration as they are simpler and
+    /// perform anti-entropy.
+    ///
+    /// For more information, consult https://www.consul.io/api-docs/catalog#register-entity.
     async fn register(
         &self,
         reg: &CatalogRegistration,
@@ -150,7 +167,12 @@ impl Catalog for Client {
         put("/v1/session/create", Some(reg), &self.config, HashMap::new(), q).await
     }
 
-    /// https://www.consul.io/api/catalog.html#deregister-entity
+    /// This method is a low-level mechanism for directly removing entries from
+    /// the Catalog. It is usually preferable to instead use methods defined
+    /// in the `Agent` trait for deregistration as they are simpler and
+    /// perform anti-entropy.
+    ///
+    /// For more information, consult https://www.consul.io/api/catalog.html#deregister-entity.
     async fn deregister(
         &self,
         dereg: &CatalogDeregistration,
@@ -159,16 +181,25 @@ impl Catalog for Client {
         put("/v1/catalog/deregister", Some(dereg), &self.config, HashMap::new(), q).await
     }
 
-    /// https://www.consul.io/api/catalog.html#list-datacenters
+    /// This method returns the list of all known datacenters. The datacenters
+    /// will be sorted in ascending order based on the estimated median round
+    /// trip time from the server to the servers in that datacenter.
+    ///
+    /// For more information, consult https://www.consul.io/api/catalog.html#list-datacenters
     async fn datacenters(&self) -> Result<(Vec<String>, QueryMeta)> {
         get("/v1/catalog/datacenters", &self.config, HashMap::new(), None).await
     }
 
-    /// https://www.consul.io/api/catalog.html#list-nodes
+    /// This endpoint and returns the nodes registered in a given datacenter.
+    ///
+    /// For more information, consult https://www.consul.io/api/catalog.html#list-nodes.
     async fn nodes(&self, q: Option<&QueryOptions>) -> Result<(Vec<Node>, QueryMeta)> {
         get("/v1/catalog/nodes", &self.config, HashMap::new(), q).await
     }
 
+    /// This endpoint returns the services registered in a given datacenter.
+	/// 
+	/// For more information, consult https://www.consul.io/api-docs/catalog#list-services.
     async fn services(
         &self,
         q: Option<&QueryOptions>,
