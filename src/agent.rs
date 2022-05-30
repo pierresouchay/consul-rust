@@ -1,15 +1,3 @@
-//! Defines data-types relating to Agents.
-//!
-//! This brief paragraph provides an overview of the Consul agent, which is the
-//! core process of Consul. The agent maintains membership information,
-//! registers services, runs checks, responds to queries, and more. The agent
-//! must run on every node that is part of a Consul cluster.
-//!
-//! The `Agent` trait defined in this crate can be used to interact with the
-//! Consul HTTP API to retrieve information about the running agent.
-//!
-//! For more information on the Agent, see https://www.consul.io/docs/agent.
-
 use std::collections::HashMap;
 
 use async_trait::async_trait;
@@ -21,6 +9,7 @@ use crate::{
     Client,
 };
 
+/// A health check run on a service hosted on this node.
 #[derive(Clone, Default, Eq, PartialEq, Serialize, Deserialize, Debug)]
 #[serde(default)]
 pub struct AgentCheck {
@@ -89,19 +78,28 @@ pub struct AgentMember {
     pub delegate_cur: u8,
 }
 
+/// A service hosted on this node.
+///
+/// For more information, see the [Agent:]
 #[derive(Eq, Default, PartialEq, Serialize, Deserialize, Debug)]
 #[serde(default)]
 pub struct AgentService {
+    /// The ID of the service in the agent.
     #[serde(rename = "ID")]
+    /// The name of this service.
     pub id: String,
     #[serde(rename = "Service")]
     pub service: String,
+    /// A list of tags assigned to this service.
     #[serde(rename = "Tags")]
     pub tags: Option<Vec<String>>,
+    /// The port this service is running on.
     #[serde(rename = "Port")]
     pub port: u16,
+    /// The address this service is running on.
     #[serde(rename = "Address")]
     pub address: String,
+    /// Whether tags are being overridden.
     #[serde(rename = "EnableTagOverride")]
     pub enable_tag_override: bool,
     #[serde(rename = "CreateIndex")]
@@ -118,61 +116,85 @@ pub struct AgentService {
 /// example, the agent registers services and checks with the Catalog and
 /// performs anti-entropy to recover from outages.
 ///
-/// For more information consult the API docs at https://www.consul.io/api-docs/agent.
+/// For more information consult the [API documentation] for the `/agent`
+/// endpoint on the Consul website.
+///
+/// [API documentation]: https://www.consul.io/api/agent/check.html#list-checks
 #[async_trait]
 pub trait Agent: Sealed {
     /// This method returns all checks that are registered with the local
     /// agent.
     ///
-    /// For more information, consult https://www.consul.io/api/agent/check.html#list-checks.
-    async fn checks(&self) -> Result<HashMap<String, AgentCheck>>;
+    /// For more information, consult the relevant endpoint's [API
+    /// documentation].
+    ///
+    /// [API documentation]: https://www.consul.io/api/agent/check.html#list-checks
+    async fn list_checks(&self) -> Result<HashMap<String, AgentCheck>>;
 
     /// This method returns the members the agent sees in the cluster gossip
     /// pool. Due to the nature of gossip, this is eventually consistent: the
     /// results may differ by agent.
     ///
-    /// For more information, consult https://www.consul.io/api-docs/agent#list-members.
-    async fn members(&self, wan: bool) -> Result<AgentMember>;
+    /// For more information, consult the relevant endpoint's [API
+    /// documentation].
+    ///
+    /// [API documentation]: https://www.consul.io/api-docs/agent#list-members.
+    async fn list_members(&self, wan: bool) -> Result<AgentMember>;
 
     /// This method instructs the agent to reload its configuration.
     ///
-    /// For more information, consult https://www.consul.io/api-docs/agent#reload-agent.
-    async fn reload(&self) -> Result<()>;
+    /// For more information, consult the relevant endpoint's [API
+    /// documentation].
+    ///
+    /// [API documentation]: https://www.consul.io/api-docs/agent#reload-agent.
+    async fn reload_agent(&self) -> Result<()>;
 
     /// This method places the agent into "maintenance mode". During maintenance
     /// mode, the node will be marked as unavailable and will not be present in
     /// DNS or API queries.
     ///
-    /// For more information, consult https://www.consul.io/api-docs/agent#enable-maintenance-mode.
-    async fn maintenance_mode(&self, enable: bool, reason: Option<&str>) -> Result<()>;
+    /// For more information, consult the relevant endpoint's [API
+    /// documentation].
+    ///
+    /// [API documentation]: https://www.consul.io/api-docs/agent#enable-maintenance-mode.
+    async fn enable_maintenance_mode(&self, enable: bool, reason: Option<&str>) -> Result<()>;
 
     /// This method instructs the agent to attempt to connect to a given
     /// address.
     ///
-    /// For more information, consult https://www.consul.io/api-docs/agent#join-agent.
-    async fn join(&self, address: &str, wan: bool) -> Result<()>;
+    /// For more information, consult the relevant endpoint's [API
+    /// documentation].
+    ///
+    /// [API documentation]: https://www.consul.io/api-docs/agent#join-agent.
+    async fn join_cluster(&self, address: &str, wan: bool) -> Result<()>;
 
     /// This endpoint triggers a graceful leave and shutdown of the agent. It is
     /// used to ensure other nodes see the agent as "left" instead of "failed".
     ///
-    /// For more information, consult https://www.consul.io/api/agent.html#graceful-leave-and-shutdown.
-    async fn leave(&self) -> Result<()>;
+    /// For more information, consult the relevant endpoint's [API
+    /// documentation].
+    ///
+    /// [API documentation]: https://www.consul.io/api/agent.html#graceful-leave-and-shutdown.
+    async fn leave_cluster(&self) -> Result<()>;
 
     /// This endpoint instructs the agent to force a node into the left state in
     /// the LAN and WAN gossip pools. If a node fails unexpectedly, then it will
     /// be in a failed state.
     ///
-    /// For more information, consult https://www.consul.io/api-docs/agent#force-leave-and-shutdown.
-    async fn force_leave(&self) -> Result<()>;
+    /// For more information, consult the relevant endpoint's [API
+    /// documentation].
+    ///
+    /// [API documentation]:  https://www.consul.io/api-docs/agent#force-leave-and-shutdown.
+    async fn force_leave_cluster(&self) -> Result<()>;
 }
 
 #[async_trait]
 impl Agent for Client {
-    async fn checks(&self) -> Result<HashMap<String, AgentCheck>> {
+    async fn list_checks(&self) -> Result<HashMap<String, AgentCheck>> {
         get("/v1/agent/checks", &self.config, HashMap::new(), None).await.map(|x| x.0)
     }
 
-    async fn members(&self, wan: bool) -> Result<AgentMember> {
+    async fn list_members(&self, wan: bool) -> Result<AgentMember> {
         let mut params = HashMap::new();
         if wan {
             params.insert(String::from("wan"), String::from("1"));
@@ -180,13 +202,13 @@ impl Agent for Client {
         get("/v1/agent/members", &self.config, params, None).await.map(|x| x.0)
     }
 
-    async fn reload(&self) -> Result<()> {
+    async fn reload_agent(&self) -> Result<()> {
         put("/v1/agent/reload", None as Option<&()>, &self.config, HashMap::new(), None)
             .await
             .map(|x| x.0)
     }
 
-    async fn maintenance_mode(&self, enable: bool, reason: Option<&str>) -> Result<()> {
+    async fn enable_maintenance_mode(&self, enable: bool, reason: Option<&str>) -> Result<()> {
         let mut params = HashMap::new();
         let enable_str = if enable { String::from("true") } else { String::from("false") };
         params.insert(String::from("enabled"), enable_str);
@@ -198,7 +220,7 @@ impl Agent for Client {
             .map(|x| x.0)
     }
 
-    async fn join(&self, address: &str, wan: bool) -> Result<()> {
+    async fn join_cluster(&self, address: &str, wan: bool) -> Result<()> {
         let mut params = HashMap::new();
 
         if wan {
@@ -208,13 +230,13 @@ impl Agent for Client {
         put(&path, None as Option<&()>, &self.config, params, None).await.map(|x| x.0)
     }
 
-    async fn leave(&self) -> Result<()> {
+    async fn leave_cluster(&self) -> Result<()> {
         put("/v1/agent/leave", None as Option<&()>, &self.config, HashMap::new(), None)
             .await
             .map(|x| x.0)
     }
 
-    async fn force_leave(&self) -> Result<()> {
+    async fn force_leave_cluster(&self) -> Result<()> {
         put("/v1/agent/force-leave", None as Option<&()>, &self.config, HashMap::new(), None)
             .await
             .map(|x| x.0)

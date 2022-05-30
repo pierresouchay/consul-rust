@@ -6,7 +6,7 @@ async fn ds_test() {
     use consul::Catalog;
     let config = Config::new_from_env().unwrap();
     let client = Client::new(config);
-    let r = client.datacenters().await.unwrap();
+    let r = client.list_datacenters().await.unwrap();
     assert_eq!(r.0, ["dc1"]);
 }
 
@@ -15,7 +15,7 @@ async fn ds_services_test() {
     use consul::Catalog;
     let config = Config::new().unwrap();
     let client = Client::new(config);
-    let r = client.services(Option::None).await.unwrap();
+    let r = client.list_datacenter_services(Option::None).await.unwrap();
     assert_ne!(r.0.len(), 0);
     match r.0.get("consul") {
         None => panic!("Should have a Consul service"),
