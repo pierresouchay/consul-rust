@@ -2,10 +2,12 @@ use std::collections::HashMap;
 
 use async_trait::async_trait;
 
-use crate::agent::{AgentCheck, AgentService};
-use crate::errors::Result;
-use crate::request::{get, put};
-use crate::{Client, QueryMeta, QueryOptions, WriteMeta, WriteOptions};
+use crate::{
+    agent::{AgentCheck, AgentService},
+    errors::Result,
+    request::{get, put},
+    Client, QueryMeta, QueryOptions, WriteMeta, WriteOptions,
+};
 
 #[derive(Eq, Default, PartialEq, Serialize, Deserialize, Debug)]
 #[serde(default)]
@@ -139,14 +141,7 @@ impl Catalog for Client {
         reg: &CatalogRegistration,
         q: Option<&WriteOptions>,
     ) -> Result<((), WriteMeta)> {
-        put(
-            "/v1/session/create",
-            Some(reg),
-            &self.config,
-            HashMap::new(),
-            q,
-        )
-        .await
+        put("/v1/session/create", Some(reg), &self.config, HashMap::new(), q).await
     }
 
     /// https://www.consul.io/api/catalog.html#deregister-entity
@@ -155,25 +150,12 @@ impl Catalog for Client {
         dereg: &CatalogDeregistration,
         q: Option<&WriteOptions>,
     ) -> Result<((), WriteMeta)> {
-        put(
-            "/v1/catalog/deregister",
-            Some(dereg),
-            &self.config,
-            HashMap::new(),
-            q,
-        )
-        .await
+        put("/v1/catalog/deregister", Some(dereg), &self.config, HashMap::new(), q).await
     }
 
     /// https://www.consul.io/api/catalog.html#list-datacenters
     async fn datacenters(&self) -> Result<(Vec<String>, QueryMeta)> {
-        get(
-            "/v1/catalog/datacenters",
-            &self.config,
-            HashMap::new(),
-            None,
-        )
-        .await
+        get("/v1/catalog/datacenters", &self.config, HashMap::new(), None).await
     }
 
     /// https://www.consul.io/api/catalog.html#list-nodes

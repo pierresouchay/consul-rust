@@ -3,9 +3,11 @@ use std::collections::HashMap;
 use async_trait::async_trait;
 use serde_json::Value;
 
-use crate::errors::Result;
-use crate::request::{get, put};
-use crate::{Client, QueryMeta, QueryOptions, WriteMeta, WriteOptions};
+use crate::{
+    errors::Result,
+    request::{get, put},
+    Client, QueryMeta, QueryOptions, WriteMeta, WriteOptions,
+};
 
 #[derive(Default, Serialize, Deserialize, Debug)]
 #[serde(default)]
@@ -71,13 +73,7 @@ impl ConnectCA for Client {
 
     /// https://www.consul.io/api/connect/ca.html#get-ca-configuration
     async fn ca_get_config(&self, q: Option<&QueryOptions>) -> Result<(CAConfig, QueryMeta)> {
-        get(
-            "/v1/connect/ca/configuration",
-            &self.config,
-            HashMap::new(),
-            q,
-        )
-        .await
+        get("/v1/connect/ca/configuration", &self.config, HashMap::new(), q).await
     }
 
     /// https://www.consul.io/api/connect/ca.html#update-ca-configuration
@@ -86,13 +82,6 @@ impl ConnectCA for Client {
         conf: &CAConfig,
         q: Option<&WriteOptions>,
     ) -> Result<((), WriteMeta)> {
-        put(
-            "/v1/connect/ca/configuration",
-            Some(conf),
-            &self.config,
-            HashMap::new(),
-            q,
-        )
-        .await
+        put("/v1/connect/ca/configuration", Some(conf), &self.config, HashMap::new(), q).await
     }
 }

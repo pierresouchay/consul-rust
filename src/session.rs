@@ -2,9 +2,11 @@ use std::collections::HashMap;
 
 use async_trait::async_trait;
 
-use crate::errors::Result;
-use crate::request::{get, put};
-use crate::{Client, QueryMeta, QueryOptions, WriteMeta, WriteOptions};
+use crate::{
+    errors::Result,
+    request::{get, put},
+    Client, QueryMeta, QueryOptions, WriteMeta, WriteOptions,
+};
 
 #[derive(Clone, Default, Eq, PartialEq, Serialize, Deserialize, Debug)]
 #[serde(default)]
@@ -68,25 +70,11 @@ impl Session for Client {
         session: &SessionEntry,
         options: Option<&WriteOptions>,
     ) -> Result<(SessionEntry, WriteMeta)> {
-        put(
-            "/v1/session/create",
-            Some(session),
-            &self.config,
-            HashMap::new(),
-            options,
-        )
-        .await
+        put("/v1/session/create", Some(session), &self.config, HashMap::new(), options).await
     }
     async fn destroy(&self, id: &str, options: Option<&WriteOptions>) -> Result<(bool, WriteMeta)> {
         let path = format!("/v1/session/destroy/{}", id);
-        put(
-            &path,
-            None as Option<&()>,
-            &self.config,
-            HashMap::new(),
-            options,
-        )
-        .await
+        put(&path, None as Option<&()>, &self.config, HashMap::new(), options).await
     }
     async fn info(
         &self,
@@ -114,13 +102,6 @@ impl Session for Client {
         options: Option<&WriteOptions>,
     ) -> Result<(Vec<SessionEntry>, WriteMeta)> {
         let path = format!("/v1/session/renew/{}", id);
-        put(
-            &path,
-            None as Option<&()>,
-            &self.config,
-            HashMap::new(),
-            options,
-        )
-        .await
+        put(&path, None as Option<&()>, &self.config, HashMap::new(), options).await
     }
 }

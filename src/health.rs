@@ -2,10 +2,7 @@ use std::collections::HashMap;
 
 use async_trait::async_trait;
 
-use crate::agent::AgentService;
-use crate::errors::Result;
-use crate::request::get;
-use crate::{Client, QueryMeta, QueryOptions};
+use crate::{agent::AgentService, errors::Result, request::get, Client, QueryMeta, QueryOptions};
 
 #[derive(Eq, Default, PartialEq, Serialize, Deserialize, Debug)]
 #[serde(default)]

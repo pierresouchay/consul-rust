@@ -15,14 +15,10 @@ pub mod session;
 
 mod request;
 
-use std::env;
-
-use std::time::Duration;
-
-use reqwest::Client as HttpClient;
-use reqwest::ClientBuilder;
+use std::{env, time::Duration};
 
 use errors::{Result, ResultExt};
+use reqwest::{Client as HttpClient, ClientBuilder};
 
 #[derive(Clone, Debug)]
 pub struct Client {
@@ -46,16 +42,15 @@ pub struct Config {
 
 impl Config {
     pub fn new() -> Result<Config> {
-        ClientBuilder::new()
-            .build()
-            .chain_err(|| "Failed to build reqwest client")
-            .map(|client| Config {
+        ClientBuilder::new().build().chain_err(|| "Failed to build reqwest client").map(|client| {
+            Config {
                 address: String::from("http://localhost:8500"),
                 datacenter: None,
                 http_client: client,
                 token: None,
                 wait_time: None,
-            })
+            }
+        })
     }
 
     pub fn new_from_env() -> Result<Config> {
@@ -70,16 +65,15 @@ impl Config {
             Err(_e) => String::from("http://127.0.0.1:8500"),
         };
         let consul_token = env::var("CONSUL_HTTP_TOKEN").ok();
-        ClientBuilder::new()
-            .build()
-            .chain_err(|| "Failed to build reqwest client")
-            .map(|client| Config {
+        ClientBuilder::new().build().chain_err(|| "Failed to build reqwest client").map(|client| {
+            Config {
                 address: consul_addr,
                 datacenter: None,
                 http_client: client,
                 token: consul_token,
                 wait_time: None,
-            })
+            }
+        })
     }
 
     pub fn new_from_consul_host(
@@ -87,16 +81,15 @@ impl Config {
         port: Option<u16>,
         token: Option<String>,
     ) -> Result<Config> {
-        ClientBuilder::new()
-            .build()
-            .chain_err(|| "Failed to build reqwest client")
-            .map(|client| Config {
+        ClientBuilder::new().build().chain_err(|| "Failed to build reqwest client").map(|client| {
+            Config {
                 address: format!("{}:{}", host, port.unwrap_or(8500)),
                 datacenter: None,
                 http_client: client,
                 token,
                 wait_time: None,
-            })
+            }
+        })
     }
 }
 
@@ -121,4 +114,13 @@ pub struct WriteOptions {
 #[derive(Clone, Debug)]
 pub struct WriteMeta {
     pub request_time: Duration,
+}
+
+pub(crate) mod sealed {
+    ///! Internal module to prevent re-implementation of strictly
+    /// client-related traits.
+    use crate::Client;
+
+    pub trait Sealed {}
+    impl Sealed for Client {}
 }

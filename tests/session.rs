@@ -1,10 +1,11 @@
 extern crate consul;
 extern crate rand;
 
-use consul::session::{Session, SessionEntry};
-use consul::{Client, Config};
-use rand::distributions::Alphanumeric;
-use rand::{thread_rng, Rng};
+use consul::{
+    session::{Session, SessionEntry},
+    Client, Config,
+};
+use rand::{distributions::Alphanumeric, thread_rng, Rng};
 
 #[tokio::test]
 async fn session_create_test() {
@@ -15,10 +16,8 @@ async fn session_create_test() {
         0
     );
 
-    let entry = SessionEntry {
-        name: Some(unique_test_identifier.to_string()),
-        ..Default::default()
-    };
+    let entry =
+        SessionEntry { name: Some(unique_test_identifier.to_string()), ..Default::default() };
 
     let (created_session_entry, _) = client.create(&entry, None).await.unwrap();
 
@@ -34,10 +33,8 @@ async fn session_create_test() {
 async fn session_destroy_test() {
     let (client, unique_test_identifier) = set_up().await;
 
-    let entry = SessionEntry {
-        name: Some(unique_test_identifier.to_string()),
-        ..Default::default()
-    };
+    let entry =
+        SessionEntry { name: Some(unique_test_identifier.to_string()), ..Default::default() };
 
     let (created_session_entry, _) = client.create(&entry, None).await.unwrap();
 
@@ -62,10 +59,8 @@ async fn session_destroy_test() {
 async fn session_info_test() {
     let (client, unique_test_identifier) = set_up().await;
 
-    let entry = SessionEntry {
-        name: Some(unique_test_identifier.to_string()),
-        ..Default::default()
-    };
+    let entry =
+        SessionEntry { name: Some(unique_test_identifier.to_string()), ..Default::default() };
 
     let (created_session_entry, _) = client.create(&entry, None).await.unwrap();
 
@@ -77,10 +72,7 @@ async fn session_info_test() {
 
     let session_entry = session_entries.get(0);
 
-    assert_eq!(
-        *session_entry.as_ref().unwrap().name.as_ref().unwrap(),
-        unique_test_identifier
-    );
+    assert_eq!(*session_entry.as_ref().unwrap().name.as_ref().unwrap(), unique_test_identifier);
 
     tear_down(&client, &created_session_entry_id).await;
 }
@@ -98,10 +90,7 @@ async fn session_list_test() {
     let mut session_ids = Vec::<String>::new();
 
     for entry_name in &entry_names {
-        let entry = SessionEntry {
-            name: Some(entry_name.to_string()),
-            ..Default::default()
-        };
+        let entry = SessionEntry { name: Some(entry_name.to_string()), ..Default::default() };
 
         let (created_session_entry, _) = client.create(&entry, None).await.unwrap();
 
@@ -135,10 +124,8 @@ async fn session_list_test() {
 async fn session_node_test() {
     let (client, unique_test_identifier) = set_up().await;
 
-    let entry = SessionEntry {
-        name: Some(unique_test_identifier.to_string()),
-        ..Default::default()
-    };
+    let entry =
+        SessionEntry { name: Some(unique_test_identifier.to_string()), ..Default::default() };
 
     let (created_session_entry, _) = client.create(&entry, None).await.unwrap();
 
@@ -162,10 +149,7 @@ async fn session_node_test() {
 async fn session_renew_test() {
     let (client, unique_test_identifier) = set_up().await;
 
-    let entry = SessionEntry {
-        name: Some(unique_test_identifier),
-        ..Default::default()
-    };
+    let entry = SessionEntry { name: Some(unique_test_identifier), ..Default::default() };
 
     let (created_session_entry, _) = client.create(&entry, None).await.unwrap();
 
@@ -180,11 +164,8 @@ async fn set_up() -> (Client, String) {
     let config = Config::new().unwrap();
     let client = Client::new(config);
 
-    let unique_test_identifier: String = thread_rng()
-        .sample_iter(&Alphanumeric)
-        .take(16)
-        .map(char::from)
-        .collect();
+    let unique_test_identifier: String =
+        thread_rng().sample_iter(&Alphanumeric).take(16).map(char::from).collect();
 
     (client, unique_test_identifier)
 }

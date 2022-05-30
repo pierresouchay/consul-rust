@@ -2,10 +2,11 @@ use std::collections::HashMap;
 
 use async_trait::async_trait;
 
-use crate::errors::Error;
-use crate::errors::Result;
-use crate::request::{delete, get, get_vec, put};
-use crate::{Client, QueryMeta, QueryOptions, WriteMeta, WriteOptions};
+use crate::{
+    errors::{Error, Result},
+    request::{delete, get, get_vec, put},
+    Client, QueryMeta, QueryOptions, WriteMeta, WriteOptions,
+};
 
 #[derive(Clone, Default, Eq, PartialEq, Serialize, Deserialize, Debug)]
 #[serde(default)]

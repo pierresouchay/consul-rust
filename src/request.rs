@@ -1,21 +1,14 @@
+use std::{collections::HashMap, future::Future, str, str::FromStr, time::Instant};
+
 use async_trait::async_trait;
-use std::collections::HashMap;
-use std::future::Future;
+use reqwest::{header::HeaderValue, Client as HttpClient, RequestBuilder, StatusCode};
+use serde::{de::DeserializeOwned, Serialize};
 use url::Url;
 
-use std::str;
-use std::str::FromStr;
-use std::time::Instant;
-
-use reqwest::header::HeaderValue;
-use reqwest::Client as HttpClient;
-use reqwest::RequestBuilder;
-use reqwest::StatusCode;
-use serde::de::DeserializeOwned;
-use serde::Serialize;
-
-use crate::errors::{Result, ResultExt};
-use crate::{Config, QueryMeta, QueryOptions, WriteMeta, WriteOptions};
+use crate::{
+    errors::{Result, ResultExt},
+    Config, QueryMeta, QueryOptions, WriteMeta, WriteOptions,
+};
 
 #[async_trait]
 trait AndThenAsync<T: Send, E: Send> {
@@ -54,76 +47,8 @@ pub async fn get_vec<R: DeserializeOwned>(
     mut params: HashMap<String, String>,
     options: Option<&QueryOptions>,
 ) -> Result<(Vec<R>, QueryMeta)> {
-    let datacenter: Option<&String> = options
-        .and_then(|o| o.datacenter.as_ref())
-        .or_else(|| config.datacenter.as_ref());
-
-    if let Some(dc) = datacenter {
-        params.insert(String::from("dc"), dc.to_owned());
-    }
-    if let Some(options) = options {
-        if let Some(index) = options.wait_index {
-            params.insert(String::from("index"), index.to_string());
-        }
-        if let Some(wait_time) = options.wait_time {
-            params.insert(String::from("wait"), format!("{}s", wait_time.as_secs()));
-        }
-    }
-
-    let url_str = format!("{}{}", config.address, path);
-    let url =
-        Url::parse_with_params(&url_str, params.iter()).chain_err(|| "Failed to parse URL")?;
-    let start = Instant::now();
-    let request_builder = add_config_options(config.http_client.get(url), &config);
-    let response = request_builder.send().await;
-    response
-        .chain_err(|| "HTTP request to consul failed")
-        .and_then_async(|r| async {
-            let x: Option<Result<u64>> = r
-                .headers()
-                .get("X-Consul-Index")
-                .map(|value: &HeaderValue| value.as_bytes())
-                .map(|bytes| {
-                    str::from_utf8(bytes)
-                        .chain_err(|| "Failed to parse valid UT8 for last index")
-                        .and_then(|s| {
-                            u64::from_str(s)
-                                .chain_err(|| "Failed to parse valid number for last index")
-                        })
-                });
-            let j = if r.status() != StatusCode::NOT_FOUND {
-                r.json()
-                    .await
-                    .chain_err(|| "Failed to parse JSON response")?
-            } else {
-                Vec::new()
-            };
-            match x {
-                Some(r) => Ok((j, Some(r?))),
-                None => Ok((j, None)),
-            }
-        })
-        .await?
-        .map(|x: (Vec<R>, Option<u64>)| {
-            (
-                x.0,
-                QueryMeta {
-                    last_index: x.1,
-                    request_time: Instant::now() - start,
-                },
-            )
-        })
-}
-
-pub async fn get<R: DeserializeOwned>(
-    path: &str,
-    config: &Config,
-    mut params: HashMap<String, String>,
-    options: Option<&QueryOptions>,
-) -> Result<(R, QueryMeta)> {
-    let datacenter: Option<&String> = options
-        .and_then(|o| o.datacenter.as_ref())
-        .or_else(|| config.datacenter.as_ref());
+    let datacenter: Option<&String> =
+        options.and_then(|o| o.datacenter.as_ref()).or_else(|| config.datacenter.as_ref());
 
     if let Some(dc) = datacenter {
         params.insert(String::from("dc"), dc.to_owned());
@@ -147,21 +72,73 @@ pub async fn get<R: DeserializeOwned>(
         .chain_err(|| "HTTP request to consul failed")
         .and_then_async(|r| async {
             let x: Option<Result<u64>> =
-                r.headers()
-                    .get("X-Consul-Index")
-                    .map(|bytes: &HeaderValue| -> Result<u64> {
-                        bytes
-                            .to_str()
+                r.headers().get("X-Consul-Index").map(|value: &HeaderValue| value.as_bytes()).map(
+                    |bytes| {
+                        str::from_utf8(bytes)
                             .chain_err(|| "Failed to parse valid UT8 for last index")
-                            .and_then(|s: &str| -> Result<u64> {
+                            .and_then(|s| {
                                 u64::from_str(s)
                                     .chain_err(|| "Failed to parse valid number for last index")
                             })
-                    });
-            let j = r
-                .json()
-                .await
-                .chain_err(|| "Failed to parse JSON response")?;
+                    },
+                );
+            let j = if r.status() != StatusCode::NOT_FOUND {
+                r.json().await.chain_err(|| "Failed to parse JSON response")?
+            } else {
+                Vec::new()
+            };
+            match x {
+                Some(r) => Ok((j, Some(r?))),
+                None => Ok((j, None)),
+            }
+        })
+        .await?
+        .map(|x: (Vec<R>, Option<u64>)| {
+            (x.0, QueryMeta { last_index: x.1, request_time: Instant::now() - start })
+        })
+}
+
+pub async fn get<R: DeserializeOwned>(
+    path: &str,
+    config: &Config,
+    mut params: HashMap<String, String>,
+    options: Option<&QueryOptions>,
+) -> Result<(R, QueryMeta)> {
+    let datacenter: Option<&String> =
+        options.and_then(|o| o.datacenter.as_ref()).or_else(|| config.datacenter.as_ref());
+
+    if let Some(dc) = datacenter {
+        params.insert(String::from("dc"), dc.to_owned());
+    }
+    if let Some(options) = options {
+        if let Some(index) = options.wait_index {
+            params.insert(String::from("index"), index.to_string());
+        }
+        if let Some(wait_time) = options.wait_time {
+            params.insert(String::from("wait"), format!("{}s", wait_time.as_secs()));
+        }
+    }
+
+    let url_str = format!("{}{}", config.address, path);
+    let url =
+        Url::parse_with_params(&url_str, params.iter()).chain_err(|| "Failed to parse URL")?;
+    let start = Instant::now();
+    let request_builder = add_config_options(config.http_client.get(url), &config);
+    let response = request_builder.send().await;
+    response
+        .chain_err(|| "HTTP request to consul failed")
+        .and_then_async(|r| async {
+            let x: Option<Result<u64>> =
+                r.headers().get("X-Consul-Index").map(|bytes: &HeaderValue| -> Result<u64> {
+                    bytes
+                        .to_str()
+                        .chain_err(|| "Failed to parse valid UT8 for last index")
+                        .and_then(|s: &str| -> Result<u64> {
+                            u64::from_str(s)
+                                .chain_err(|| "Failed to parse valid number for last index")
+                        })
+                });
+            let j = r.json().await.chain_err(|| "Failed to parse JSON response")?;
             match x {
                 Some(r) => Ok((j, Some(r?))),
                 None => Ok((j, None)),
@@ -169,13 +146,7 @@ pub async fn get<R: DeserializeOwned>(
         })
         .await?
         .map(|x: (R, Option<u64>)| {
-            (
-                x.0,
-                QueryMeta {
-                    last_index: x.1,
-                    request_time: Instant::now() - start,
-                },
-            )
+            (x.0, QueryMeta { last_index: x.1, request_time: Instant::now() - start })
         })
 }
 
@@ -222,9 +193,8 @@ where
     F: Fn(&HttpClient, Url) -> RequestBuilder,
 {
     let start = Instant::now();
-    let datacenter: Option<&String> = options
-        .and_then(|o| o.datacenter.as_ref())
-        .or_else(|| config.datacenter.as_ref());
+    let datacenter: Option<&String> =
+        options.and_then(|o| o.datacenter.as_ref()).or_else(|| config.datacenter.as_ref());
 
     if let Some(dc) = datacenter {
         params.insert(String::from("dc"), dc.to_owned());
@@ -234,11 +204,7 @@ where
     let url =
         Url::parse_with_params(&url_str, params.iter()).chain_err(|| "Failed to parse URL")?;
     let builder = req(&config.http_client, url);
-    let builder = if let Some(b) = body {
-        builder.json(b)
-    } else {
-        builder
-    };
+    let builder = if let Some(b) = body { builder.json(b) } else { builder };
     let builder = add_config_options(builder, &config);
     builder
         .send()
@@ -246,12 +212,5 @@ where
         .chain_err(|| "HTTP request to consul failed")
         .and_then_async(|x| async { x.json().await.chain_err(|| "Failed to parse JSON") })
         .await?
-        .map(|x| {
-            (
-                x,
-                WriteMeta {
-                    request_time: Instant::now() - start,
-                },
-            )
-        })
+        .map(|x| (x, WriteMeta { request_time: Instant::now() - start }))
 }

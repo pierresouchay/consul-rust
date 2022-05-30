@@ -1,6 +1,5 @@
 extern crate consul;
-use consul::kv::KVPair;
-use consul::{Client, Config};
+use consul::{kv::KVPair, Client, Config};
 
 #[tokio::test]
 async fn kv_test() {
