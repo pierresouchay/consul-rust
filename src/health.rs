@@ -68,10 +68,10 @@ pub struct ServiceEntry {
 
 #[async_trait]
 pub trait Health: Sealed {
-	/// See the [API documentation] for more information.
+    /// See the [API documentation] for more information.
     ///
     /// [API documentation]: https://www.consul.io/api-docs/health#list-nodes-for-service
-    async fn service(
+    async fn list_service_instances(
         &self,
         service: &str,
         tag: Option<&str>,
@@ -82,7 +82,7 @@ pub trait Health: Sealed {
 
 #[async_trait]
 impl Health for Client {
-    async fn service(
+    async fn list_service_instances(
         &self,
         service: &str,
         tag: Option<&str>,
