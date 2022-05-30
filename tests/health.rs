@@ -3,7 +3,7 @@ use consul::{Client, Config};
 
 #[tokio::test]
 async fn health_test() {
-    use consul::health::Health;
+    use consul::Health;
     let config = Config::new().unwrap();
     let client = Client::new(config);
     // An existing service for a agent in dev mode

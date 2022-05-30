@@ -54,20 +54,27 @@ extern crate error_chain;
 #[macro_use]
 extern crate serde_derive;
 
-pub mod agent;
-pub mod catalog;
-pub mod connect_ca;
-pub mod errors;
-pub mod health;
-pub mod kv;
-pub mod session;
-
-mod request;
-
 use std::{env, time::Duration};
 
 use errors::{Result, ResultExt};
 use reqwest::{Client as HttpClient, ClientBuilder};
+
+mod agent;
+mod catalog;
+mod connect_ca;
+mod errors;
+mod health;
+mod kv;
+mod request;
+mod session;
+
+pub use agent::*;
+pub use catalog::*;
+pub use connect_ca::*;
+pub use errors::*;
+pub use health::*;
+pub use kv::*;
+pub use session::*;
 
 #[derive(Clone, Debug)]
 pub struct Client {

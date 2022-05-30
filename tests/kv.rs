@@ -1,9 +1,9 @@
 extern crate consul;
-use consul::{kv::KVPair, Client, Config};
+use consul::{Client, Config, KVPair};
 
 #[tokio::test]
 async fn kv_test() {
-    use consul::kv::KV;
+    use consul::KV;
     let config = Config::new().unwrap();
     let client = Client::new(config);
     let r = client.list("", None).await.unwrap();

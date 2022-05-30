@@ -1,10 +1,7 @@
 extern crate consul;
 extern crate rand;
 
-use consul::{
-    session::{Session, SessionEntry},
-    Client, Config,
-};
+use consul::{Client, Config, Session, SessionEntry};
 use rand::{distributions::Alphanumeric, thread_rng, Rng};
 
 #[tokio::test]
