@@ -5,10 +5,13 @@ use async_trait::async_trait;
 use crate::{
     agent::AgentService,
     errors::Result,
-    payload::{CatalogDeregistrationPayload, CatalogRegistrationPayload, WriteOptions, WriteMeta, QueryMeta, QueryOptions},
+    payload::{
+        CatalogDeregistrationPayload, CatalogRegistrationPayload, QueryMeta, QueryOptions,
+        WriteMeta, WriteOptions,
+    },
     request::{get, put},
     sealed::Sealed,
-    Client
+    Client,
 };
 
 #[derive(Eq, Default, PartialEq, Serialize, Deserialize, Debug)]
@@ -105,6 +108,8 @@ pub struct CatalogNode {
     #[serde(rename = "Services")]
     services: HashMap<String, AgentService>,
 }
+
+/// This trait provides methods for interacting with the Agent catalogue.
 #[async_trait]
 pub trait Catalog: Sealed {
     /// This method is a low-level mechanism for registering or updating

@@ -13,7 +13,6 @@ pub struct WriteOptions {
     pub datacenter: Option<String>,
 }
 
-
 #[derive(Clone, Debug, Default)]
 pub struct QueryOptions {
     pub datacenter: Option<String>,

@@ -4,9 +4,10 @@ use async_trait::async_trait;
 
 use crate::{
     errors::Result,
+    payload::{QueryMeta, QueryOptions, WriteMeta, WriteOptions},
     request::{get, put},
     sealed::Sealed,
-    Client, payload::{WriteOptions, WriteMeta, QueryMeta, QueryOptions},
+    Client,
 };
 
 #[derive(Clone, Default, Eq, PartialEq, Serialize, Deserialize, Debug)]

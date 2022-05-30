@@ -7,8 +7,8 @@ use url::Url;
 
 use crate::{
     errors::{Result, ResultExt},
-    payload::{WriteOptions, QueryOptions, QueryMeta, WriteMeta},
-    Config
+    payload::{QueryMeta, QueryOptions, WriteMeta, WriteOptions},
+    Config,
 };
 
 #[async_trait]

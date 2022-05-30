@@ -3,7 +3,12 @@ use std::collections::HashMap;
 use async_trait::async_trait;
 
 use crate::{
-    agent::AgentService, errors::Result, request::get, sealed::Sealed, Client, payload::{QueryOptions, QueryMeta},
+    agent::AgentService,
+    errors::Result,
+    payload::{QueryMeta, QueryOptions},
+    request::get,
+    sealed::Sealed,
+    Client,
 };
 
 #[derive(Eq, Default, PartialEq, Serialize, Deserialize, Debug)]
@@ -63,6 +68,9 @@ pub struct ServiceEntry {
 
 #[async_trait]
 pub trait Health: Sealed {
+	/// See the [API documentation] for more information.
+    ///
+    /// [API documentation]: https://www.consul.io/api-docs/health#list-nodes-for-service
     async fn service(
         &self,
         service: &str,
