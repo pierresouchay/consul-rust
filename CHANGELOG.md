@@ -2,6 +2,11 @@
 
 ## <Unreleased>
 
+## 0.5.0
+
+* Switch to asynchronous Reqwest clients.
+* Rustify variable names.
+
 ## 0.4.2
 
 * Added `Config::new_from_consul_host`(#57)
@@ -13,4 +18,3 @@
 * reqwest to 0.11, use blocking api
 * support for X-Consul-Token
 * [BUGFIX] Fix incorrect return values for services() in catalog
-
