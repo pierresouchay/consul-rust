@@ -17,7 +17,7 @@ async fn kv_test() {
 
     assert!(client.put(&pair, None).await.unwrap());
 
-    let b64val = client.get("testkey", None).await.unwrap().unwrap().value;
+    let b64val = client.get("testkey", None).await.unwrap().into_iter().next().unwrap().value;
     let bytes = base64::decode(b64val).unwrap();
     assert_eq!(std::str::from_utf8(&bytes).unwrap(), "\"testvalue\"");
 

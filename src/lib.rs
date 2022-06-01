@@ -150,9 +150,15 @@ pub enum ConsulError {
     /// The Consul API returned an error.
     #[error("http request failed")]
     HttpError(#[from] reqwest::Error),
+    #[error("request failed with code {0}")]
+    RequestFailed(reqwest::StatusCode),
     /// A parameter was not provided.
     #[error("missing parameter, {0}")]
     MissingParameter(String),
+    #[error("expected a non-empty key, got empty")]
+    EmptyKey,
+    #[error("failed to decode response body")]
+    DecodeError(#[from] serde_json::Error),
 }
 
 /// Type alias for `Result<T, ConsulError>`.

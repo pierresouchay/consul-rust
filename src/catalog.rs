@@ -141,7 +141,10 @@ pub trait Catalog: Sealed {
     /// This endpoint and returns the nodes registered in a given datacenter.
     ///
     /// For more information, consult https://www.consul.io/api/catalog.html#list-nodes.
-    async fn list_datacenter_nodes(&self, q: Option<QueryOptions>) -> ConsulResult<Vec<Node>>;
+    async fn list_datacenter_nodes(
+        &self,
+        q: Option<QueryOptions>,
+    ) -> ConsulResult<HashMap<String, Vec<Node>>>;
 
     /// This endpoint returns the services registered in a given datacenter.
     ///
@@ -149,7 +152,7 @@ pub trait Catalog: Sealed {
     async fn list_datacenter_services(
         &self,
         q: Option<QueryOptions>,
-    ) -> ConsulResult<HashMap<String, String>>;
+    ) -> ConsulResult<HashMap<String, Vec<String>>>;
 }
 
 #[async_trait]
@@ -174,14 +177,17 @@ impl Catalog for Client {
         self.get("/v1/catalog/datacenters", None).await
     }
 
-    async fn list_datacenter_nodes(&self, q: Option<QueryOptions>) -> ConsulResult<Vec<Node>> {
+    async fn list_datacenter_nodes(
+        &self,
+        q: Option<QueryOptions>,
+    ) -> ConsulResult<HashMap<String, Vec<Node>>> {
         self.get("/v1/catalog/nodes", q).await
     }
 
     async fn list_datacenter_services(
         &self,
         options: Option<QueryOptions>,
-    ) -> ConsulResult<HashMap<String, String>> {
+    ) -> ConsulResult<HashMap<String, Vec<String>>> {
         self.get("/v1/catalog/services", options).await
     }
 }

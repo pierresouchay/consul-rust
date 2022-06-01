@@ -1,7 +1,7 @@
 use std::{collections::HashMap, future::Future, str};
 
 use async_trait::async_trait;
-use reqwest::Method;
+use reqwest::{Method, StatusCode};
 use serde::{de::DeserializeOwned, Serialize};
 use url::Url;
 
@@ -31,17 +31,58 @@ impl<T: Send, E: Send> AndThenAsync<T, E> for std::result::Result<T, E> {
     }
 }
 
-trait Denest<T, E> {
-    fn denest(self) -> Result<T, E>;
-}
-
-impl<T, E> Denest<T, E> for Result<Result<T, E>, E> {
-    fn denest(self) -> Result<T, E> {
-        self.map_err(|e| e).and_then(|r| r)
-    }
-}
-
 impl Client {
+    pub(crate) async fn send_with_empty<
+        Path: AsRef<str>,
+        Body: Serialize,
+        Response: DeserializeOwned,
+    >(
+        &self,
+        method: Method,
+        path: Path,
+        params: Option<HashMap<String, String>>,
+        body: Option<Body>,
+        options: Option<QueryOptions>,
+    ) -> ConsulResult<Option<Response>> {
+        // unwrap parameters
+        let mut params = params.unwrap_or_default();
+        // if datacenter option is specified, set
+        let datacenter: Option<String> = options
+            .and_then(|o| o.datacenter)
+            .or_else(|| self.config.datacenter.as_ref().map(|s| s.clone()));
+        if let Some(dc) = datacenter {
+            params.insert(String::from("dc"), dc.to_owned());
+        }
+        // parse url and create builder
+        let url = Url::parse_with_params(
+            &format!("{}{}", self.config.address, path.as_ref()),
+            params.iter(),
+        )
+        .unwrap();
+        let builder = self.config.http_client.request(method, url);
+        // add body if specified
+        let builder = if let Some(b) = body { builder.json(&b) } else { builder };
+        // add query options
+        let builder = match &self.config.token {
+            Some(val) => builder.header("X-Consul-Token", val),
+            None => builder,
+        };
+        // send request
+        let response = builder.send().await?;
+        if response.status() == StatusCode::NOT_FOUND {
+            return Ok(None);
+        }
+        if !response.status().is_success() {
+            return Err(ConsulError::RequestFailed(response.status()));
+        }
+        let response = response.text().await?;
+        if response.is_empty() {
+            return Ok(None);
+        }
+        let response = serde_json::from_str(&response).map_err(|e| ConsulError::DecodeError(e))?;
+        Ok(response)
+    }
+
     /// This method sends a request to the Consul API.
     ///
     /// The request is sent to the Consul API at the given path using the

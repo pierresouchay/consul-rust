@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
 use async_trait::async_trait;
+use reqwest::Method;
 
 use crate::{payload::QueryOptions, sealed::Sealed, Client, ConsulError, ConsulResult};
 
@@ -28,7 +29,7 @@ pub struct KVPair {
 pub trait KV: Sealed {
     async fn acquire(&self, _: &KVPair, _: Option<QueryOptions>) -> ConsulResult<bool>;
     async fn delete(&self, _: &str, _: Option<QueryOptions>) -> ConsulResult<bool>;
-    async fn get(&self, _: &str, _: Option<QueryOptions>) -> ConsulResult<Option<KVPair>>;
+    async fn get(&self, _: &str, _: Option<QueryOptions>) -> ConsulResult<Vec<KVPair>>;
     async fn list(&self, _: &str, _: Option<QueryOptions>) -> ConsulResult<Vec<KVPair>>;
     async fn put(&self, _: &KVPair, _: Option<QueryOptions>) -> ConsulResult<bool>;
     async fn release(&self, _: &KVPair, _: Option<QueryOptions>) -> ConsulResult<bool>;
@@ -56,16 +57,20 @@ impl KV for Client {
         let path = format!("/v1/kv/{}", key);
         self.delete(&path, None, options).await
     }
-    async fn get(&self, key: &str, options: Option<QueryOptions>) -> ConsulResult<Option<KVPair>> {
+    async fn get(&self, key: &str, options: Option<QueryOptions>) -> ConsulResult<Vec<KVPair>> {
         let path = format!("/v1/kv/{}", key);
         self.get(&path, options).await
     }
 
     async fn list(&self, prefix: &str, o: Option<QueryOptions>) -> ConsulResult<Vec<KVPair>> {
         let mut params = HashMap::new();
+        // enable key mode
         params.insert(String::from("recurse"), String::from(""));
         let path = format!("/v1/kv/{}", prefix);
-        self.get_with_params(&path, Some(params), o).await
+        // use send with empty as consul returns invalid json
+        self.send_with_empty(Method::GET, path, Some(params), None as Option<()>, o)
+            .await
+            .map(|r: Option<Vec<KVPair>>| r.unwrap_or_default())
     }
 
     async fn put(&self, pair: &KVPair, o: Option<QueryOptions>) -> ConsulResult<bool> {
