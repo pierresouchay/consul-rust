@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use async_trait::async_trait;
 use reqwest::Method;
 
-use crate::{payload::QueryOptions, sealed::Sealed, Client, ConsulError, ConsulResult};
+use crate::{sealed::Sealed, Client, ConsulError, ConsulResult, QueryOptions};
 
 #[derive(Clone, Default, Eq, PartialEq, Serialize, Deserialize, Debug)]
 #[serde(default)]

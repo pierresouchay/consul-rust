@@ -1,7 +1,7 @@
 use async_trait::async_trait;
 use serde_json::Value;
 
-use crate::{payload::QueryOptions, sealed::Sealed, Client, ConsulResult};
+use crate::{sealed::Sealed, Client, ConsulResult, QueryOptions};
 
 /// This trait provides the ability to interact with the Secure Session API.
 #[derive(Default, Serialize, Deserialize, Debug)]

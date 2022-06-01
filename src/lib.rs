@@ -60,21 +60,20 @@ use reqwest::{Client as HttpClient, ClientBuilder};
 
 mod agent;
 mod catalog;
+mod common;
 mod connect_ca;
 mod health;
 mod kv;
 mod request;
 mod session;
 
-pub mod payload;
-
 pub use agent::*;
 pub use catalog::*;
+pub use common::*;
 pub use connect_ca::*;
 pub use health::*;
 pub use kv::*;
 pub use session::*;
-
 #[derive(Clone, Debug)]
 pub struct Client {
     config: Config,
@@ -159,6 +158,13 @@ pub enum ConsulError {
     EmptyKey,
     #[error("failed to decode response body")]
     DecodeError(#[from] serde_json::Error),
+}
+
+#[derive(Clone, Debug, Default)]
+pub struct QueryOptions {
+    pub datacenter: Option<String>,
+    pub wait_index: Option<u64>,
+    pub wait_time: Option<Duration>,
 }
 
 /// Type alias for `Result<T, ConsulError>`.

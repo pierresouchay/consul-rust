@@ -5,7 +5,7 @@ use reqwest::{Method, StatusCode};
 use serde::{de::DeserializeOwned, Serialize};
 use url::Url;
 
-use crate::{payload::QueryOptions, Client, ConsulError, ConsulResult};
+use crate::{Client, ConsulError, ConsulResult, QueryOptions};
 
 #[async_trait]
 trait AndThenAsync<T: Send, E: Send> {

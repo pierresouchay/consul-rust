@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use async_trait::async_trait;
 
-use crate::{payload::QueryOptions, sealed::Sealed, AgentService, Client, ConsulResult};
+use crate::{sealed::Sealed, AgentService, Client, ConsulResult, QueryOptions};
 
 #[derive(Eq, Default, PartialEq, Serialize, Deserialize, Debug)]
 #[serde(default)]

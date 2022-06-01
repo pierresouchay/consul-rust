@@ -1,6 +1,6 @@
 use async_trait::async_trait;
 
-use crate::{payload::QueryOptions, sealed::Sealed, Client, ConsulResult};
+use crate::{sealed::Sealed, Client, ConsulResult, QueryOptions};
 
 #[derive(Clone, Default, Eq, PartialEq, Serialize, Deserialize, Debug)]
 #[serde(default)]
