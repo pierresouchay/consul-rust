@@ -7,7 +7,7 @@ async fn kv_test() {
     let config = Config::new().unwrap();
     let client = Client::new(config);
     let r = client.list("", None).await.unwrap();
-    assert!(r.0.is_empty());
+    assert!(r.is_empty());
 
     let pair = KVPair {
         key: String::from("testkey"),
@@ -15,17 +15,17 @@ async fn kv_test() {
         ..Default::default()
     };
 
-    assert!(client.put(&pair, None).await.unwrap().0);
+    assert!(client.put(&pair, None).await.unwrap());
 
-    let b64val = client.get("testkey", None).await.unwrap().0.unwrap().value;
+    let b64val = client.get("testkey", None).await.unwrap().unwrap().value;
     let bytes = base64::decode(b64val).unwrap();
     assert_eq!(std::str::from_utf8(&bytes).unwrap(), "\"testvalue\"");
 
     let r = client.list("t", None).await.unwrap();
-    assert!(!r.0.is_empty());
+    assert!(!r.is_empty());
 
     client.delete("testkey", None).await.unwrap();
 
     let r = client.list("", None).await.unwrap();
-    assert!(r.0.is_empty());
+    assert!(r.is_empty());
 }

@@ -1,14 +1,6 @@
-use std::collections::HashMap;
-
 use async_trait::async_trait;
 
-use crate::{
-    errors::Result,
-    payload::{QueryMeta, QueryOptions, WriteMeta, WriteOptions},
-    request::{get, put},
-    sealed::Sealed,
-    Client,
-};
+use crate::{errors::Result, payload::QueryOptions, sealed::Sealed, Client};
 
 #[derive(Clone, Default, Eq, PartialEq, Serialize, Deserialize, Debug)]
 #[serde(default)]
@@ -43,67 +35,43 @@ pub struct SessionEntry {
 pub trait Session: Sealed {
     async fn create(
         &self,
-        session: &SessionEntry,
-        options: Option<&WriteOptions>,
-    ) -> Result<(SessionEntry, WriteMeta)>;
-    async fn destroy(&self, id: &str, options: Option<&WriteOptions>) -> Result<(bool, WriteMeta)>;
-    async fn info(
-        &self,
-        id: &str,
-        options: Option<&QueryOptions>,
-    ) -> Result<(Vec<SessionEntry>, QueryMeta)>;
-    async fn list(&self, options: Option<&QueryOptions>) -> Result<(Vec<SessionEntry>, QueryMeta)>;
-    async fn node(
-        &self,
-        node: &str,
-        options: Option<&QueryOptions>,
-    ) -> Result<(Vec<SessionEntry>, QueryMeta)>;
-    async fn renew(
-        &self,
-        id: &str,
-        options: Option<&WriteOptions>,
-    ) -> Result<(Vec<SessionEntry>, WriteMeta)>;
+        session: SessionEntry,
+        options: Option<QueryOptions>,
+    ) -> Result<SessionEntry>;
+    async fn destroy(&self, id: &str, options: Option<QueryOptions>) -> Result<bool>;
+    async fn info(&self, id: &str, options: Option<QueryOptions>) -> Result<Vec<SessionEntry>>;
+    async fn list(&self, options: Option<QueryOptions>) -> Result<Vec<SessionEntry>>;
+    async fn node(&self, node: &str, options: Option<QueryOptions>) -> Result<Vec<SessionEntry>>;
+    async fn renew(&self, id: &str, options: Option<QueryOptions>) -> Result<Vec<SessionEntry>>;
 }
 
 #[async_trait]
 impl Session for Client {
     async fn create(
         &self,
-        session: &SessionEntry,
-        options: Option<&WriteOptions>,
-    ) -> Result<(SessionEntry, WriteMeta)> {
-        put("/v1/session/create", Some(session), &self.config, HashMap::new(), options).await
+        session: SessionEntry,
+        options: Option<QueryOptions>,
+    ) -> Result<SessionEntry> {
+        self.put("/v1/session/create", session, None, options).await
     }
-    async fn destroy(&self, id: &str, options: Option<&WriteOptions>) -> Result<(bool, WriteMeta)> {
+    async fn destroy(&self, id: &str, options: Option<QueryOptions>) -> Result<bool> {
         let path = format!("/v1/session/destroy/{}", id);
-        put(&path, None as Option<&()>, &self.config, HashMap::new(), options).await
+        self.put(&path, None as Option<&()>, None, options).await
     }
-    async fn info(
-        &self,
-        id: &str,
-        options: Option<&QueryOptions>,
-    ) -> Result<(Vec<SessionEntry>, QueryMeta)> {
+    async fn info(&self, id: &str, options: Option<QueryOptions>) -> Result<Vec<SessionEntry>> {
         let path = format!("/v1/session/info/{}", id);
-        get(&path, &self.config, HashMap::new(), options).await
+        self.get(&path, options).await
     }
-    async fn list(&self, options: Option<&QueryOptions>) -> Result<(Vec<SessionEntry>, QueryMeta)> {
-        get("/v1/session/list", &self.config, HashMap::new(), options).await
+    async fn list(&self, options: Option<QueryOptions>) -> Result<Vec<SessionEntry>> {
+        self.get("/v1/session/list", options).await
     }
-    async fn node(
-        &self,
-        node: &str,
-        options: Option<&QueryOptions>,
-    ) -> Result<(Vec<SessionEntry>, QueryMeta)> {
+    async fn node(&self, node: &str, options: Option<QueryOptions>) -> Result<Vec<SessionEntry>> {
         let path = format!("/v1/session/node/{}", node);
-        get(&path, &self.config, HashMap::new(), options).await
+        self.get(&path, options).await
     }
 
-    async fn renew(
-        &self,
-        id: &str,
-        options: Option<&WriteOptions>,
-    ) -> Result<(Vec<SessionEntry>, WriteMeta)> {
+    async fn renew(&self, id: &str, options: Option<QueryOptions>) -> Result<Vec<SessionEntry>> {
         let path = format!("/v1/session/renew/{}", id);
-        put(&path, None as Option<&()>, &self.config, HashMap::new(), options).await
+        self.put(&path, None as Option<&()>, None, options).await
     }
 }

@@ -2,12 +2,11 @@ use std::collections::HashMap;
 
 use async_trait::async_trait;
 
-use crate::{
-    errors::Result,
-    request::{get, put},
-    sealed::Sealed,
-    Client,
-};
+use crate::{errors::Result, sealed::Sealed, Client};
+
+mod service;
+
+pub use service::*;
 
 /// A health check run on a service hosted on this node.
 #[derive(Clone, Default, Eq, PartialEq, Serialize, Deserialize, Debug)]
@@ -191,7 +190,7 @@ pub trait Agent: Sealed {
 #[async_trait]
 impl Agent for Client {
     async fn list_checks(&self) -> Result<HashMap<String, AgentCheck>> {
-        get("/v1/agent/checks", &self.config, HashMap::new(), None).await.map(|x| x.0)
+        self.get("/v1/agent/checks", None).await
     }
 
     async fn list_members(&self, wan: bool) -> Result<AgentMember> {
@@ -199,13 +198,11 @@ impl Agent for Client {
         if wan {
             params.insert(String::from("wan"), String::from("1"));
         }
-        get("/v1/agent/members", &self.config, params, None).await.map(|x| x.0)
+        self.get("/v1/agent/members", None).await
     }
 
     async fn reload_agent(&self) -> Result<()> {
-        put("/v1/agent/reload", None as Option<&()>, &self.config, HashMap::new(), None)
-            .await
-            .map(|x| x.0)
+        self.put("/v1/agent/reload", (), None, None).await
     }
 
     async fn enable_maintenance_mode(&self, enable: bool, reason: Option<&str>) -> Result<()> {
@@ -215,9 +212,7 @@ impl Agent for Client {
         if let Some(r) = reason {
             params.insert(String::from("reason"), r.to_owned());
         }
-        put("/v1/agent/maintenance", None as Option<&()>, &self.config, params, None)
-            .await
-            .map(|x| x.0)
+        self.put("/v1/agent/maintenance", (), Some(params), None).await
     }
 
     async fn join_cluster(&self, address: &str, wan: bool) -> Result<()> {
@@ -227,18 +222,14 @@ impl Agent for Client {
             params.insert(String::from("wan"), String::from("true"));
         }
         let path = format!("/v1/agent/join/{}", address);
-        put(&path, None as Option<&()>, &self.config, params, None).await.map(|x| x.0)
+        self.put(&path, (), Some(params), None).await
     }
 
     async fn leave_cluster(&self) -> Result<()> {
-        put("/v1/agent/leave", None as Option<&()>, &self.config, HashMap::new(), None)
-            .await
-            .map(|x| x.0)
+        self.put("/v1/agent/leave", (), None, None).await
     }
 
     async fn force_leave_cluster(&self) -> Result<()> {
-        put("/v1/agent/force-leave", None as Option<&()>, &self.config, HashMap::new(), None)
-            .await
-            .map(|x| x.0)
+        self.put("/v1/agent/force-leave", (), None, None).await
     }
 }

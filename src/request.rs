@@ -1,14 +1,14 @@
-use std::{collections::HashMap, future::Future, str, str::FromStr, time::Instant};
+use std::{collections::HashMap, future::Future, str};
 
 use async_trait::async_trait;
-use reqwest::{header::HeaderValue, Client as HttpClient, RequestBuilder, StatusCode};
+use reqwest::Method;
 use serde::{de::DeserializeOwned, Serialize};
 use url::Url;
 
 use crate::{
     errors::{Result, ResultExt},
-    payload::{QueryMeta, QueryOptions, WriteMeta, WriteOptions},
-    Config,
+    payload::QueryOptions,
+    Client,
 };
 
 #[async_trait]
@@ -35,183 +35,90 @@ impl<T: Send, E: Send> AndThenAsync<T, E> for std::result::Result<T, E> {
     }
 }
 
-fn add_config_options(builder: RequestBuilder, config: &Config) -> RequestBuilder {
-    match &config.token {
-        Some(val) => builder.header("X-Consul-Token", val),
-        None => builder,
-    }
-}
-
-pub async fn get_vec<R: DeserializeOwned>(
-    path: &str,
-    config: &Config,
-    mut params: HashMap<String, String>,
-    options: Option<&QueryOptions>,
-) -> Result<(Vec<R>, QueryMeta)> {
-    let datacenter: Option<&String> =
-        options.and_then(|o| o.datacenter.as_ref()).or_else(|| config.datacenter.as_ref());
-
-    if let Some(dc) = datacenter {
-        params.insert(String::from("dc"), dc.to_owned());
-    }
-    if let Some(options) = options {
-        if let Some(index) = options.wait_index {
-            params.insert(String::from("index"), index.to_string());
+impl Client {
+    /// This method sends a request to the Consul API.
+    ///
+    /// The request is sent to the Consul API at the given path using the
+    /// provided method. If params exists, the request will be sent with the
+    /// given parameters, plus any defined in the client options.
+    ///
+    /// This method will error if the request fails, and will panic if the
+    /// URL or parameters are invalid.
+    pub(crate) async fn send<Path: AsRef<str>, Body: Serialize, Response: DeserializeOwned>(
+        &self,
+        method: Method,
+        path: Path,
+        params: Option<HashMap<String, String>>,
+        body: Option<Body>,
+        options: Option<QueryOptions>,
+    ) -> Result<Response> {
+        // unwrap parameters
+        let mut params = params.unwrap_or_default();
+        // if datacenter option is specified, set
+        let datacenter: Option<String> = options
+            .and_then(|o| o.datacenter)
+            .or_else(|| self.config.datacenter.as_ref().map(|s| s.clone()));
+        if let Some(dc) = datacenter {
+            params.insert(String::from("dc"), dc.to_owned());
         }
-        if let Some(wait_time) = options.wait_time {
-            params.insert(String::from("wait"), format!("{}s", wait_time.as_secs()));
-        }
+        // parse url and create builder
+        let url = Url::parse_with_params(
+            &format!("{}{}", self.config.address, path.as_ref()),
+            params.iter(),
+        )
+        .unwrap();
+        let builder = self.config.http_client.request(method, url);
+        // add body if specified
+        let builder = if let Some(b) = body { builder.json(&b) } else { builder };
+        // add query options
+        let builder = match &self.config.token {
+            Some(val) => builder.header("X-Consul-Token", val),
+            None => builder,
+        };
+        builder
+            .send()
+            .await
+            .chain_err(|| "HTTP request to consul failed")
+            .and_then_async(|x| async { x.json().await.chain_err(|| "Failed to parse JSON") })
+            .await?
+    }
+    /// This method makes a GET request with query parameters to the given path.
+    pub(crate) async fn get_with_params<Path: AsRef<str>, T: DeserializeOwned>(
+        &self,
+        path: Path,
+        params: Option<HashMap<String, String>>,
+        options: Option<QueryOptions>,
+    ) -> Result<T> {
+        self.send::<Path, (), T>(Method::GET, path, params, None, options).await
     }
 
-    let url_str = format!("{}{}", config.address, path);
-    let url =
-        Url::parse_with_params(&url_str, params.iter()).chain_err(|| "Failed to parse URL")?;
-    let start = Instant::now();
-    let request_builder = add_config_options(config.http_client.get(url), &config);
-    let response = request_builder.send().await;
-    response
-        .chain_err(|| "HTTP request to consul failed")
-        .and_then_async(|r| async {
-            let x: Option<Result<u64>> =
-                r.headers().get("X-Consul-Index").map(|value: &HeaderValue| value.as_bytes()).map(
-                    |bytes| {
-                        str::from_utf8(bytes)
-                            .chain_err(|| "Failed to parse valid UT8 for last index")
-                            .and_then(|s| {
-                                u64::from_str(s)
-                                    .chain_err(|| "Failed to parse valid number for last index")
-                            })
-                    },
-                );
-            let j = if r.status() != StatusCode::NOT_FOUND {
-                r.json().await.chain_err(|| "Failed to parse JSON response")?
-            } else {
-                Vec::new()
-            };
-            match x {
-                Some(r) => Ok((j, Some(r?))),
-                None => Ok((j, None)),
-            }
-        })
-        .await?
-        .map(|x: (Vec<R>, Option<u64>)| {
-            (x.0, QueryMeta { last_index: x.1, request_time: Instant::now() - start })
-        })
-}
-
-pub async fn get<R: DeserializeOwned>(
-    path: &str,
-    config: &Config,
-    mut params: HashMap<String, String>,
-    options: Option<&QueryOptions>,
-) -> Result<(R, QueryMeta)> {
-    let datacenter: Option<&String> =
-        options.and_then(|o| o.datacenter.as_ref()).or_else(|| config.datacenter.as_ref());
-
-    if let Some(dc) = datacenter {
-        params.insert(String::from("dc"), dc.to_owned());
-    }
-    if let Some(options) = options {
-        if let Some(index) = options.wait_index {
-            params.insert(String::from("index"), index.to_string());
-        }
-        if let Some(wait_time) = options.wait_time {
-            params.insert(String::from("wait"), format!("{}s", wait_time.as_secs()));
-        }
+    /// This method makes a GET request to the given path.
+    pub(crate) async fn get<Path: AsRef<str>, T: DeserializeOwned>(
+        &self,
+        path: Path,
+        options: Option<QueryOptions>,
+    ) -> Result<T> {
+        self.get_with_params(path, None, options).await
     }
 
-    let url_str = format!("{}{}", config.address, path);
-    let url =
-        Url::parse_with_params(&url_str, params.iter()).chain_err(|| "Failed to parse URL")?;
-    let start = Instant::now();
-    let request_builder = add_config_options(config.http_client.get(url), &config);
-    let response = request_builder.send().await;
-    response
-        .chain_err(|| "HTTP request to consul failed")
-        .and_then_async(|r| async {
-            let x: Option<Result<u64>> =
-                r.headers().get("X-Consul-Index").map(|bytes: &HeaderValue| -> Result<u64> {
-                    bytes
-                        .to_str()
-                        .chain_err(|| "Failed to parse valid UT8 for last index")
-                        .and_then(|s: &str| -> Result<u64> {
-                            u64::from_str(s)
-                                .chain_err(|| "Failed to parse valid number for last index")
-                        })
-                });
-            let j = r.json().await.chain_err(|| "Failed to parse JSON response")?;
-            match x {
-                Some(r) => Ok((j, Some(r?))),
-                None => Ok((j, None)),
-            }
-        })
-        .await?
-        .map(|x: (R, Option<u64>)| {
-            (x.0, QueryMeta { last_index: x.1, request_time: Instant::now() - start })
-        })
-}
-
-pub async fn delete<R: DeserializeOwned>(
-    path: &str,
-    config: &Config,
-    params: HashMap<String, String>,
-    options: Option<&WriteOptions>,
-) -> Result<(R, WriteMeta)> {
-    let req = |http_client: &HttpClient, url: Url| -> RequestBuilder { http_client.delete(url) };
-    write_with_body(path, None as Option<&()>, config, params, options, req).await
-}
-
-/*
-pub fn post<t: Serialize, t: DeserializeOwned>(path: &str,
-                                               body: Option<&T>,
-                                               config: &Config,
-                                               options: Option<&WriteOptions>)
-                                               -> Result<(R, WriteMeta)> {
-    let req = |http_client: &HttpClient, url: Url| -> RequestBuilder { http_client.post(url) };
-    write_with_body(path, body, config, options, req)
-}
-*/
-pub async fn put<T: Serialize, R: DeserializeOwned>(
-    path: &str,
-    body: Option<&T>,
-    config: &Config,
-    params: HashMap<String, String>,
-    options: Option<&WriteOptions>,
-) -> Result<(R, WriteMeta)> {
-    let req = |http_client: &HttpClient, url: Url| -> RequestBuilder { http_client.put(url) };
-    write_with_body(path, body, config, params, options, req).await
-}
-
-async fn write_with_body<T: Serialize, R: DeserializeOwned, F>(
-    path: &str,
-    body: Option<&T>,
-    config: &Config,
-    mut params: HashMap<String, String>,
-    options: Option<&WriteOptions>,
-    req: F,
-) -> Result<(R, WriteMeta)>
-where
-    F: Fn(&HttpClient, Url) -> RequestBuilder,
-{
-    let start = Instant::now();
-    let datacenter: Option<&String> =
-        options.and_then(|o| o.datacenter.as_ref()).or_else(|| config.datacenter.as_ref());
-
-    if let Some(dc) = datacenter {
-        params.insert(String::from("dc"), dc.to_owned());
+    /// This method makes a PUT request to the given path.
+    pub(crate) async fn put<Path: AsRef<str>, Body: Serialize, Response: DeserializeOwned>(
+        &self,
+        path: Path,
+        body: Body,
+        params: Option<HashMap<String, String>>,
+        options: Option<QueryOptions>,
+    ) -> Result<Response> {
+        self.send::<Path, Body, Response>(Method::PUT, path, params, Some(body), options).await
     }
 
-    let url_str = format!("{}{}", config.address, path);
-    let url =
-        Url::parse_with_params(&url_str, params.iter()).chain_err(|| "Failed to parse URL")?;
-    let builder = req(&config.http_client, url);
-    let builder = if let Some(b) = body { builder.json(b) } else { builder };
-    let builder = add_config_options(builder, &config);
-    builder
-        .send()
-        .await
-        .chain_err(|| "HTTP request to consul failed")
-        .and_then_async(|x| async { x.json().await.chain_err(|| "Failed to parse JSON") })
-        .await?
-        .map(|x| (x, WriteMeta { request_time: Instant::now() - start }))
+    /// This method makes a DELETE request to the given path.
+    pub(crate) async fn delete<Path: AsRef<str>, Response: DeserializeOwned>(
+        &self,
+        path: Path,
+        params: Option<HashMap<String, String>>,
+        options: Option<QueryOptions>,
+    ) -> Result<Response> {
+        self.send::<Path, (), Response>(Method::DELETE, path, params, None, options).await
+    }
 }

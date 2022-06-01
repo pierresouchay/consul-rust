@@ -4,8 +4,7 @@ use async_trait::async_trait;
 
 use crate::{
     errors::{Error, Result},
-    payload::{QueryMeta, QueryOptions, WriteMeta, WriteOptions},
-    request::{delete, get, get_vec, put},
+    payload::QueryOptions,
     sealed::Sealed,
     Client,
 };
@@ -32,17 +31,17 @@ pub struct KVPair {
 
 #[async_trait]
 pub trait KV: Sealed {
-    async fn acquire(&self, _: &KVPair, _: Option<&WriteOptions>) -> Result<(bool, WriteMeta)>;
-    async fn delete(&self, _: &str, _: Option<&WriteOptions>) -> Result<(bool, WriteMeta)>;
-    async fn get(&self, _: &str, _: Option<&QueryOptions>) -> Result<(Option<KVPair>, QueryMeta)>;
-    async fn list(&self, _: &str, _: Option<&QueryOptions>) -> Result<(Vec<KVPair>, QueryMeta)>;
-    async fn put(&self, _: &KVPair, _: Option<&WriteOptions>) -> Result<(bool, WriteMeta)>;
-    async fn release(&self, _: &KVPair, _: Option<&WriteOptions>) -> Result<(bool, WriteMeta)>;
+    async fn acquire(&self, _: &KVPair, _: Option<QueryOptions>) -> Result<bool>;
+    async fn delete(&self, _: &str, _: Option<QueryOptions>) -> Result<bool>;
+    async fn get(&self, _: &str, _: Option<QueryOptions>) -> Result<Option<KVPair>>;
+    async fn list(&self, _: &str, _: Option<QueryOptions>) -> Result<Vec<KVPair>>;
+    async fn put(&self, _: &KVPair, _: Option<QueryOptions>) -> Result<bool>;
+    async fn release(&self, _: &KVPair, _: Option<QueryOptions>) -> Result<bool>;
 }
 
 #[async_trait]
 impl KV for Client {
-    async fn acquire(&self, pair: &KVPair, o: Option<&WriteOptions>) -> Result<(bool, WriteMeta)> {
+    async fn acquire(&self, pair: &KVPair, options: Option<QueryOptions>) -> Result<bool> {
         let mut params = HashMap::new();
         if let Some(i) = pair.flags {
             if i != 0 {
@@ -52,39 +51,29 @@ impl KV for Client {
         if let Some(ref session) = pair.session {
             params.insert(String::from("acquire"), session.to_owned());
             let path = format!("/v1/kv/{}", pair.key);
-            put(&path, Some(&pair.value), &self.config, params, o).await
+            self.put(&path, &pair.value, Some(params), options).await
         } else {
             Err(Error::from("Session flag is required to acquire lock"))
         }
     }
 
-    async fn delete(&self, key: &str, options: Option<&WriteOptions>) -> Result<(bool, WriteMeta)> {
+    async fn delete(&self, key: &str, options: Option<QueryOptions>) -> Result<bool> {
         let path = format!("/v1/kv/{}", key);
-        delete(&path, &self.config, HashMap::new(), options).await
+        self.delete(&path, None, options).await
     }
-    async fn get(
-        &self,
-        key: &str,
-        options: Option<&QueryOptions>,
-    ) -> Result<(Option<KVPair>, QueryMeta)> {
+    async fn get(&self, key: &str, options: Option<QueryOptions>) -> Result<Option<KVPair>> {
         let path = format!("/v1/kv/{}", key);
-        let x: Result<(Vec<KVPair>, QueryMeta)> =
-            get(&path, &self.config, HashMap::new(), options).await;
-        x.map(|r| (r.0.first().cloned(), r.1))
+        self.get(&path, options).await
     }
 
-    async fn list(
-        &self,
-        prefix: &str,
-        o: Option<&QueryOptions>,
-    ) -> Result<(Vec<KVPair>, QueryMeta)> {
+    async fn list(&self, prefix: &str, o: Option<QueryOptions>) -> Result<Vec<KVPair>> {
         let mut params = HashMap::new();
         params.insert(String::from("recurse"), String::from(""));
         let path = format!("/v1/kv/{}", prefix);
-        get_vec(&path, &self.config, params, o).await
+        self.get_with_params(&path, Some(params), o).await
     }
 
-    async fn put(&self, pair: &KVPair, o: Option<&WriteOptions>) -> Result<(bool, WriteMeta)> {
+    async fn put(&self, pair: &KVPair, o: Option<QueryOptions>) -> Result<bool> {
         let mut params = HashMap::new();
         if let Some(i) = pair.flags {
             if i != 0 {
@@ -92,10 +81,10 @@ impl KV for Client {
             }
         }
         let path = format!("/v1/kv/{}", pair.key);
-        put(&path, Some(&pair.value), &self.config, params, o).await
+        self.put(&path, &pair.value, None, o).await
     }
 
-    async fn release(&self, pair: &KVPair, o: Option<&WriteOptions>) -> Result<(bool, WriteMeta)> {
+    async fn release(&self, pair: &KVPair, o: Option<QueryOptions>) -> Result<bool> {
         let mut params = HashMap::new();
         if let Some(i) = pair.flags {
             if i != 0 {
@@ -105,7 +94,7 @@ impl KV for Client {
         if let Some(ref session) = pair.session {
             params.insert(String::from("release"), session.to_owned());
             let path = format!("/v1/kv/{}", pair.key);
-            put(&path, Some(&pair.value), &self.config, params, o).await
+            self.put(&path, &pair.value, Some(params), o).await
         } else {
             Err(Error::from("Session flag is required to release a lock"))
         }

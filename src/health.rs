@@ -2,14 +2,7 @@ use std::collections::HashMap;
 
 use async_trait::async_trait;
 
-use crate::{
-    agent::AgentService,
-    errors::Result,
-    payload::{QueryMeta, QueryOptions},
-    request::get,
-    sealed::Sealed,
-    Client,
-};
+use crate::{errors::Result, payload::QueryOptions, sealed::Sealed, AgentService, Client};
 
 #[derive(Eq, Default, PartialEq, Serialize, Deserialize, Debug)]
 #[serde(default)]
@@ -76,8 +69,8 @@ pub trait Health: Sealed {
         service: &str,
         tag: Option<&str>,
         passing_only: bool,
-        options: Option<&QueryOptions>,
-    ) -> Result<(Vec<ServiceEntry>, QueryMeta)>;
+        options: Option<QueryOptions>,
+    ) -> Result<Vec<ServiceEntry>>;
 }
 
 #[async_trait]
@@ -87,8 +80,8 @@ impl Health for Client {
         service: &str,
         tag: Option<&str>,
         passing_only: bool,
-        options: Option<&QueryOptions>,
-    ) -> Result<(Vec<ServiceEntry>, QueryMeta)> {
+        options: Option<QueryOptions>,
+    ) -> Result<Vec<ServiceEntry>> {
         let mut params = HashMap::new();
         let path = format!("/v1/health/service/{}", service);
         if passing_only {
@@ -97,6 +90,6 @@ impl Health for Client {
         if let Some(tag) = tag {
             params.insert(String::from("tag"), tag.to_owned());
         }
-        get(&path, &self.config, params, options).await
+        self.get(&path, options).await
     }
 }

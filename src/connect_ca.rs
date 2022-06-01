@@ -1,15 +1,7 @@
-use std::collections::HashMap;
-
 use async_trait::async_trait;
 use serde_json::Value;
 
-use crate::{
-    errors::Result,
-    payload::{QueryMeta, QueryOptions, WriteMeta, WriteOptions},
-    request::{get, put},
-    sealed::Sealed,
-    Client,
-};
+use crate::{errors::Result, payload::QueryOptions, sealed::Sealed, Client};
 
 /// This trait provides the ability to interact with the Secure Session API.
 #[derive(Default, Serialize, Deserialize, Debug)]
@@ -58,14 +50,9 @@ pub struct CARoot {
 
 #[async_trait]
 pub trait ConnectCA: Sealed {
-    async fn list_ca_root_certs(&self, q: Option<&QueryOptions>)
-        -> Result<(CARootList, QueryMeta)>;
-    async fn get_ca_config(&self, q: Option<&QueryOptions>) -> Result<(CAConfig, QueryMeta)>;
-    async fn update_ca_config(
-        &self,
-        conf: &CAConfig,
-        q: Option<&WriteOptions>,
-    ) -> Result<((), WriteMeta)>;
+    async fn list_ca_root_certs(&self, options: Option<QueryOptions>) -> Result<CARootList>;
+    async fn get_ca_config(&self, options: Option<QueryOptions>) -> Result<CAConfig>;
+    async fn update_ca_config(&self, conf: CAConfig, options: Option<QueryOptions>) -> Result<()>;
 }
 
 #[async_trait]
@@ -73,18 +60,15 @@ impl ConnectCA for Client {
     /// See the [API documentation] for more information.
     ///
     /// [API documentation]: https://www.consul.io/api/connect/ca.html#list-ca-root-certificates
-    async fn list_ca_root_certs(
-        &self,
-        q: Option<&QueryOptions>,
-    ) -> Result<(CARootList, QueryMeta)> {
-        get("/v1/connect/ca/roots", &self.config, HashMap::new(), q).await
+    async fn list_ca_root_certs(&self, options: Option<QueryOptions>) -> Result<CARootList> {
+        self.get("/v1/connect/ca/roots", options).await
     }
 
     /// See the [API documentation] for more information.
     ///
     /// [API documentation]: https://www.consul.io/api/connect/ca.html#get-ca-configuration
-    async fn get_ca_config(&self, q: Option<&QueryOptions>) -> Result<(CAConfig, QueryMeta)> {
-        get("/v1/connect/ca/configuration", &self.config, HashMap::new(), q).await
+    async fn get_ca_config(&self, options: Option<QueryOptions>) -> Result<CAConfig> {
+        self.get("/v1/connect/ca/configuration", options).await
     }
 
     /// See the [API documentation] for more information.
@@ -92,9 +76,9 @@ impl ConnectCA for Client {
     /// [API documentation]: https://www.consul.io/api/connect/ca.html#update-ca-configuration
     async fn update_ca_config(
         &self,
-        conf: &CAConfig,
-        q: Option<&WriteOptions>,
-    ) -> Result<((), WriteMeta)> {
-        put("/v1/connect/ca/configuration", Some(conf), &self.config, HashMap::new(), q).await
+        payload: CAConfig,
+        options: Option<QueryOptions>,
+    ) -> Result<()> {
+        self.put("/v1/connect/ca/configuration", payload, None, options).await
     }
 }

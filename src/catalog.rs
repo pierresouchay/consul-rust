@@ -5,11 +5,7 @@ use async_trait::async_trait;
 use crate::{
     agent::AgentService,
     errors::Result,
-    payload::{
-        CatalogDeregistrationPayload, CatalogRegistrationPayload, QueryMeta, QueryOptions,
-        WriteMeta, WriteOptions,
-    },
-    request::{get, put},
+    payload::{CatalogDeregistrationPayload, CatalogRegistrationPayload, QueryOptions},
     sealed::Sealed,
     Client,
 };
@@ -120,9 +116,9 @@ pub trait Catalog: Sealed {
     /// For more information, consult https://www.consul.io/api-docs/catalog#register-entity.
     async fn register(
         &self,
-        reg: &CatalogRegistrationPayload,
-        q: Option<&WriteOptions>,
-    ) -> Result<((), WriteMeta)>;
+        reg: CatalogRegistrationPayload,
+        q: Option<QueryOptions>,
+    ) -> Result<()>;
 
     /// This method is a low-level mechanism for directly removing entries from
     /// the Catalog. It is usually preferable to instead use methods defined
@@ -132,67 +128,61 @@ pub trait Catalog: Sealed {
     /// For more information, consult https://www.consul.io/api/catalog.html#deregister-entity.
     async fn deregister(
         &self,
-        dereg: &CatalogDeregistrationPayload,
-        q: Option<&WriteOptions>,
-    ) -> Result<((), WriteMeta)>;
+        payload: CatalogDeregistrationPayload,
+        options: Option<QueryOptions>,
+    ) -> Result<()>;
 
     /// This method returns the list of all known datacenters. The datacenters
     /// will be sorted in ascending order based on the estimated median round
     /// trip time from the server to the servers in that datacenter.
     ///
     /// For more information, consult https://www.consul.io/api/catalog.html#list-datacenters
-    async fn list_datacenters(&self) -> Result<(Vec<String>, QueryMeta)>;
+    async fn list_datacenters(&self) -> Result<Vec<String>>;
 
     /// This endpoint and returns the nodes registered in a given datacenter.
     ///
     /// For more information, consult https://www.consul.io/api/catalog.html#list-nodes.
-    async fn list_datacenter_nodes(
-        &self,
-        q: Option<&QueryOptions>,
-    ) -> Result<(Vec<Node>, QueryMeta)>;
+    async fn list_datacenter_nodes(&self, q: Option<QueryOptions>) -> Result<Vec<Node>>;
 
     /// This endpoint returns the services registered in a given datacenter.
     ///
     /// For more information, consult https://www.consul.io/api-docs/catalog#list-services.
     async fn list_datacenter_services(
         &self,
-        q: Option<&QueryOptions>,
-    ) -> Result<(HashMap<String, Vec<String>>, QueryMeta)>;
+        q: Option<QueryOptions>,
+    ) -> Result<HashMap<String, String>>;
 }
 
 #[async_trait]
 impl Catalog for Client {
     async fn register(
         &self,
-        reg: &CatalogRegistrationPayload,
-        q: Option<&WriteOptions>,
-    ) -> Result<((), WriteMeta)> {
-        put("/v1/session/create", Some(reg), &self.config, HashMap::new(), q).await
+        payload: CatalogRegistrationPayload,
+        options: Option<QueryOptions>,
+    ) -> Result<()> {
+        self.put("/v1/session/create", payload, None, options).await
     }
 
     async fn deregister(
         &self,
-        dereg: &CatalogDeregistrationPayload,
-        q: Option<&WriteOptions>,
-    ) -> Result<((), WriteMeta)> {
-        put("/v1/catalog/deregister", Some(dereg), &self.config, HashMap::new(), q).await
+        payload: CatalogDeregistrationPayload,
+        options: Option<QueryOptions>,
+    ) -> Result<()> {
+        self.put("/v1/catalog/deregister", payload, None, options).await
     }
 
-    async fn list_datacenters(&self) -> Result<(Vec<String>, QueryMeta)> {
-        get("/v1/catalog/datacenters", &self.config, HashMap::new(), None).await
+    async fn list_datacenters(&self) -> Result<Vec<String>> {
+        self.get("/v1/catalog/datacenters", None).await
     }
 
-    async fn list_datacenter_nodes(
-        &self,
-        q: Option<&QueryOptions>,
-    ) -> Result<(Vec<Node>, QueryMeta)> {
-        get("/v1/catalog/nodes", &self.config, HashMap::new(), q).await
+    async fn list_datacenter_nodes(&self, q: Option<QueryOptions>) -> Result<Vec<Node>> {
+        self.get("/v1/catalog/nodes", q).await
     }
 
     async fn list_datacenter_services(
         &self,
-        q: Option<&QueryOptions>,
-    ) -> Result<(HashMap<String, Vec<String>>, QueryMeta)> {
-        get("/v1/catalog/services", &self.config, HashMap::new(), q).await
+        options: Option<QueryOptions>,
+    ) -> Result<HashMap<String, String>> {
+        self.get("/v1/catalog/services", options).await
     }
 }
