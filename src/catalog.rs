@@ -4,10 +4,9 @@ use async_trait::async_trait;
 
 use crate::{
     agent::AgentService,
-    errors::Result,
     payload::{CatalogDeregistrationPayload, CatalogRegistrationPayload, QueryOptions},
     sealed::Sealed,
-    Client,
+    Client, ConsulResult,
 };
 
 #[derive(Eq, Default, PartialEq, Serialize, Deserialize, Debug)]
@@ -118,7 +117,7 @@ pub trait Catalog: Sealed {
         &self,
         reg: CatalogRegistrationPayload,
         q: Option<QueryOptions>,
-    ) -> Result<()>;
+    ) -> ConsulResult<()>;
 
     /// This method is a low-level mechanism for directly removing entries from
     /// the Catalog. It is usually preferable to instead use methods defined
@@ -130,19 +129,19 @@ pub trait Catalog: Sealed {
         &self,
         payload: CatalogDeregistrationPayload,
         options: Option<QueryOptions>,
-    ) -> Result<()>;
+    ) -> ConsulResult<()>;
 
     /// This method returns the list of all known datacenters. The datacenters
     /// will be sorted in ascending order based on the estimated median round
     /// trip time from the server to the servers in that datacenter.
     ///
     /// For more information, consult https://www.consul.io/api/catalog.html#list-datacenters
-    async fn list_datacenters(&self) -> Result<Vec<String>>;
+    async fn list_datacenters(&self) -> ConsulResult<Vec<String>>;
 
     /// This endpoint and returns the nodes registered in a given datacenter.
     ///
     /// For more information, consult https://www.consul.io/api/catalog.html#list-nodes.
-    async fn list_datacenter_nodes(&self, q: Option<QueryOptions>) -> Result<Vec<Node>>;
+    async fn list_datacenter_nodes(&self, q: Option<QueryOptions>) -> ConsulResult<Vec<Node>>;
 
     /// This endpoint returns the services registered in a given datacenter.
     ///
@@ -150,7 +149,7 @@ pub trait Catalog: Sealed {
     async fn list_datacenter_services(
         &self,
         q: Option<QueryOptions>,
-    ) -> Result<HashMap<String, String>>;
+    ) -> ConsulResult<HashMap<String, String>>;
 }
 
 #[async_trait]
@@ -159,7 +158,7 @@ impl Catalog for Client {
         &self,
         payload: CatalogRegistrationPayload,
         options: Option<QueryOptions>,
-    ) -> Result<()> {
+    ) -> ConsulResult<()> {
         self.put("/v1/session/create", payload, None, options).await
     }
 
@@ -167,22 +166,22 @@ impl Catalog for Client {
         &self,
         payload: CatalogDeregistrationPayload,
         options: Option<QueryOptions>,
-    ) -> Result<()> {
+    ) -> ConsulResult<()> {
         self.put("/v1/catalog/deregister", payload, None, options).await
     }
 
-    async fn list_datacenters(&self) -> Result<Vec<String>> {
+    async fn list_datacenters(&self) -> ConsulResult<Vec<String>> {
         self.get("/v1/catalog/datacenters", None).await
     }
 
-    async fn list_datacenter_nodes(&self, q: Option<QueryOptions>) -> Result<Vec<Node>> {
+    async fn list_datacenter_nodes(&self, q: Option<QueryOptions>) -> ConsulResult<Vec<Node>> {
         self.get("/v1/catalog/nodes", q).await
     }
 
     async fn list_datacenter_services(
         &self,
         options: Option<QueryOptions>,
-    ) -> Result<HashMap<String, String>> {
+    ) -> ConsulResult<HashMap<String, String>> {
         self.get("/v1/catalog/services", options).await
     }
 }

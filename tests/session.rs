@@ -158,7 +158,7 @@ async fn session_renew_test() {
 }
 
 async fn set_up() -> (Client, String) {
-    let config = Config::new().unwrap();
+    let config = Config::new();
     let client = Client::new(config);
 
     let unique_test_identifier: String =

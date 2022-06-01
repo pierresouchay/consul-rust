@@ -49,20 +49,18 @@
 
 #![allow(unused_doc_comments)]
 
-#[macro_use]
-extern crate error_chain;
+use thiserror::Error;
+
 #[macro_use]
 extern crate serde_derive;
 
 use std::{env, time::Duration};
 
-use errors::{Result, ResultExt};
 use reqwest::{Client as HttpClient, ClientBuilder};
 
 mod agent;
 mod catalog;
 mod connect_ca;
-mod errors;
 mod health;
 mod kv;
 mod request;
@@ -73,7 +71,6 @@ pub mod payload;
 pub use agent::*;
 pub use catalog::*;
 pub use connect_ca::*;
-pub use errors::*;
 pub use health::*;
 pub use kv::*;
 pub use session::*;
@@ -99,19 +96,18 @@ pub struct Config {
 }
 
 impl Config {
-    pub fn new() -> Result<Config> {
-        ClientBuilder::new().build().chain_err(|| "Failed to build reqwest client").map(|client| {
-            Config {
-                address: String::from("http://localhost:8500"),
-                datacenter: None,
-                http_client: client,
-                token: None,
-                wait_time: None,
-            }
-        })
+    pub fn new() -> Config {
+        let client = ClientBuilder::new().build().unwrap();
+        Config {
+            address: String::from("http://localhost:8500"),
+            datacenter: None,
+            http_client: client,
+            token: None,
+            wait_time: None,
+        }
     }
 
-    pub fn new_from_env() -> Result<Config> {
+    pub fn new_from_env() -> Config {
         let consul_addr = match env::var("CONSUL_HTTP_ADDR") {
             Ok(val) => {
                 if val.starts_with("http") {
@@ -123,34 +119,44 @@ impl Config {
             Err(_e) => String::from("http://127.0.0.1:8500"),
         };
         let consul_token = env::var("CONSUL_HTTP_TOKEN").ok();
-        ClientBuilder::new().build().chain_err(|| "Failed to build reqwest client").map(|client| {
-            Config {
-                address: consul_addr,
-                datacenter: None,
-                http_client: client,
-                token: consul_token,
-                wait_time: None,
-            }
-        })
+        let client = ClientBuilder::new().build().unwrap();
+        Config {
+            address: consul_addr,
+            datacenter: None,
+            http_client: client,
+            token: consul_token,
+            wait_time: None,
+        }
     }
 
-    pub fn new_from_consul_host(
-        host: &str,
-        port: Option<u16>,
-        token: Option<String>,
-    ) -> Result<Config> {
-        ClientBuilder::new().build().chain_err(|| "Failed to build reqwest client").map(|client| {
-            Config {
-                address: format!("{}:{}", host, port.unwrap_or(8500)),
-                datacenter: None,
-                http_client: client,
-                token,
-                wait_time: None,
-            }
-        })
+    /// Create a new `Config` with the given address.
+    ///
+    /// # Panics
+    /// Panics if `request::Client` construction fails.
+    pub fn new_from_consul_host(host: &str, port: Option<u16>, token: Option<String>) -> Config {
+        let client = ClientBuilder::new().build().unwrap();
+        Config {
+            address: format!("{}:{}", host, port.unwrap_or(8500)),
+            datacenter: None,
+            http_client: client,
+            token,
+            wait_time: None,
+        }
     }
 }
 
+#[derive(Debug, Error)]
+pub enum ConsulError {
+    /// The Consul API returned an error.
+    #[error("http request failed")]
+    HttpError(#[from] reqwest::Error),
+    /// A parameter was not provided.
+    #[error("missing parameter, {0}")]
+    MissingParameter(String),
+}
+
+/// Type alias for `Result<T, ConsulError>`.
+pub type ConsulResult<T> = Result<T, ConsulError>;
 pub(crate) mod sealed {
     ///! Internal module to prevent re-implementation of strictly
     /// client-related traits.

@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use async_trait::async_trait;
 
-use crate::{errors::Result, sealed::Sealed, Client};
+use crate::{sealed::Sealed, Client, ConsulResult};
 
 mod service;
 
@@ -128,7 +128,7 @@ pub trait Agent: Sealed {
     /// documentation].
     ///
     /// [API documentation]: https://www.consul.io/api/agent/check.html#list-checks
-    async fn list_checks(&self) -> Result<HashMap<String, AgentCheck>>;
+    async fn list_checks(&self) -> ConsulResult<HashMap<String, AgentCheck>>;
 
     /// This method returns the members the agent sees in the cluster gossip
     /// pool. Due to the nature of gossip, this is eventually consistent: the
@@ -138,7 +138,7 @@ pub trait Agent: Sealed {
     /// documentation].
     ///
     /// [API documentation]: https://www.consul.io/api-docs/agent#list-members.
-    async fn list_members(&self, wan: bool) -> Result<AgentMember>;
+    async fn list_members(&self, wan: bool) -> ConsulResult<AgentMember>;
 
     /// This method instructs the agent to reload its configuration.
     ///
@@ -146,7 +146,7 @@ pub trait Agent: Sealed {
     /// documentation].
     ///
     /// [API documentation]: https://www.consul.io/api-docs/agent#reload-agent.
-    async fn reload_agent(&self) -> Result<()>;
+    async fn reload_agent(&self) -> ConsulResult<()>;
 
     /// This method places the agent into "maintenance mode". During maintenance
     /// mode, the node will be marked as unavailable and will not be present in
@@ -156,7 +156,8 @@ pub trait Agent: Sealed {
     /// documentation].
     ///
     /// [API documentation]: https://www.consul.io/api-docs/agent#enable-maintenance-mode.
-    async fn enable_maintenance_mode(&self, enable: bool, reason: Option<&str>) -> Result<()>;
+    async fn enable_maintenance_mode(&self, enable: bool, reason: Option<&str>)
+        -> ConsulResult<()>;
 
     /// This method instructs the agent to attempt to connect to a given
     /// address.
@@ -165,7 +166,7 @@ pub trait Agent: Sealed {
     /// documentation].
     ///
     /// [API documentation]: https://www.consul.io/api-docs/agent#join-agent.
-    async fn join_cluster(&self, address: &str, wan: bool) -> Result<()>;
+    async fn join_cluster(&self, address: &str, wan: bool) -> ConsulResult<()>;
 
     /// This endpoint triggers a graceful leave and shutdown of the agent. It is
     /// used to ensure other nodes see the agent as "left" instead of "failed".
@@ -174,7 +175,7 @@ pub trait Agent: Sealed {
     /// documentation].
     ///
     /// [API documentation]: https://www.consul.io/api/agent.html#graceful-leave-and-shutdown.
-    async fn leave_cluster(&self) -> Result<()>;
+    async fn leave_cluster(&self) -> ConsulResult<()>;
 
     /// This endpoint instructs the agent to force a node into the left state in
     /// the LAN and WAN gossip pools. If a node fails unexpectedly, then it will
@@ -184,16 +185,16 @@ pub trait Agent: Sealed {
     /// documentation].
     ///
     /// [API documentation]:  https://www.consul.io/api-docs/agent#force-leave-and-shutdown.
-    async fn force_leave_cluster(&self) -> Result<()>;
+    async fn force_leave_cluster(&self) -> ConsulResult<()>;
 }
 
 #[async_trait]
 impl Agent for Client {
-    async fn list_checks(&self) -> Result<HashMap<String, AgentCheck>> {
+    async fn list_checks(&self) -> ConsulResult<HashMap<String, AgentCheck>> {
         self.get("/v1/agent/checks", None).await
     }
 
-    async fn list_members(&self, wan: bool) -> Result<AgentMember> {
+    async fn list_members(&self, wan: bool) -> ConsulResult<AgentMember> {
         let mut params = HashMap::new();
         if wan {
             params.insert(String::from("wan"), String::from("1"));
@@ -201,11 +202,15 @@ impl Agent for Client {
         self.get("/v1/agent/members", None).await
     }
 
-    async fn reload_agent(&self) -> Result<()> {
+    async fn reload_agent(&self) -> ConsulResult<()> {
         self.put("/v1/agent/reload", (), None, None).await
     }
 
-    async fn enable_maintenance_mode(&self, enable: bool, reason: Option<&str>) -> Result<()> {
+    async fn enable_maintenance_mode(
+        &self,
+        enable: bool,
+        reason: Option<&str>,
+    ) -> ConsulResult<()> {
         let mut params = HashMap::new();
         let enable_str = if enable { String::from("true") } else { String::from("false") };
         params.insert(String::from("enabled"), enable_str);
@@ -215,7 +220,7 @@ impl Agent for Client {
         self.put("/v1/agent/maintenance", (), Some(params), None).await
     }
 
-    async fn join_cluster(&self, address: &str, wan: bool) -> Result<()> {
+    async fn join_cluster(&self, address: &str, wan: bool) -> ConsulResult<()> {
         let mut params = HashMap::new();
 
         if wan {
@@ -225,11 +230,11 @@ impl Agent for Client {
         self.put(&path, (), Some(params), None).await
     }
 
-    async fn leave_cluster(&self) -> Result<()> {
+    async fn leave_cluster(&self) -> ConsulResult<()> {
         self.put("/v1/agent/leave", (), None, None).await
     }
 
-    async fn force_leave_cluster(&self) -> Result<()> {
+    async fn force_leave_cluster(&self) -> ConsulResult<()> {
         self.put("/v1/agent/force-leave", (), None, None).await
     }
 }

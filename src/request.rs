@@ -5,18 +5,14 @@ use reqwest::Method;
 use serde::{de::DeserializeOwned, Serialize};
 use url::Url;
 
-use crate::{
-    errors::{Result, ResultExt},
-    payload::QueryOptions,
-    Client,
-};
+use crate::{payload::QueryOptions, Client, ConsulError, ConsulResult};
 
 #[async_trait]
 trait AndThenAsync<T: Send, E: Send> {
     async fn and_then_async<U, F, Fut>(self, f: F) -> std::result::Result<U, E>
     where
         F: FnOnce(T) -> Fut + Send,
-        Fut: Future<Output = U> + Send,
+        Fut: Future<Output = Result<U, E>> + Send,
         Self: Sized;
 }
 
@@ -25,13 +21,23 @@ impl<T: Send, E: Send> AndThenAsync<T, E> for std::result::Result<T, E> {
     async fn and_then_async<U, F, Fut>(self, f: F) -> std::result::Result<U, E>
     where
         F: FnOnce(T) -> Fut + Send,
-        Fut: Future<Output = U> + Send,
+        Fut: Future<Output = Result<U, E>> + Send,
         Self: Sized,
     {
         match self {
-            Ok(inner) => Ok(f(inner).await),
+            Ok(inner) => Ok(f(inner).await?),
             Err(e) => Err(e),
         }
+    }
+}
+
+trait Denest<T, E> {
+    fn denest(self) -> Result<T, E>;
+}
+
+impl<T, E> Denest<T, E> for Result<Result<T, E>, E> {
+    fn denest(self) -> Result<T, E> {
+        self.map_err(|e| e).and_then(|r| r)
     }
 }
 
@@ -51,7 +57,7 @@ impl Client {
         params: Option<HashMap<String, String>>,
         body: Option<Body>,
         options: Option<QueryOptions>,
-    ) -> Result<Response> {
+    ) -> ConsulResult<Response> {
         // unwrap parameters
         let mut params = params.unwrap_or_default();
         // if datacenter option is specified, set
@@ -78,9 +84,9 @@ impl Client {
         builder
             .send()
             .await
-            .chain_err(|| "HTTP request to consul failed")
-            .and_then_async(|x| async { x.json().await.chain_err(|| "Failed to parse JSON") })
-            .await?
+            .and_then_async(|x| async { x.json::<Response>().await })
+            .await
+            .map_err(|err| ConsulError::HttpError(err))
     }
     /// This method makes a GET request with query parameters to the given path.
     pub(crate) async fn get_with_params<Path: AsRef<str>, T: DeserializeOwned>(
@@ -88,7 +94,7 @@ impl Client {
         path: Path,
         params: Option<HashMap<String, String>>,
         options: Option<QueryOptions>,
-    ) -> Result<T> {
+    ) -> ConsulResult<T> {
         self.send::<Path, (), T>(Method::GET, path, params, None, options).await
     }
 
@@ -97,7 +103,7 @@ impl Client {
         &self,
         path: Path,
         options: Option<QueryOptions>,
-    ) -> Result<T> {
+    ) -> ConsulResult<T> {
         self.get_with_params(path, None, options).await
     }
 
@@ -108,7 +114,7 @@ impl Client {
         body: Body,
         params: Option<HashMap<String, String>>,
         options: Option<QueryOptions>,
-    ) -> Result<Response> {
+    ) -> ConsulResult<Response> {
         self.send::<Path, Body, Response>(Method::PUT, path, params, Some(body), options).await
     }
 
@@ -118,7 +124,7 @@ impl Client {
         path: Path,
         params: Option<HashMap<String, String>>,
         options: Option<QueryOptions>,
-    ) -> Result<Response> {
+    ) -> ConsulResult<Response> {
         self.send::<Path, (), Response>(Method::DELETE, path, params, None, options).await
     }
 }

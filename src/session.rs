@@ -1,6 +1,6 @@
 use async_trait::async_trait;
 
-use crate::{errors::Result, payload::QueryOptions, sealed::Sealed, Client};
+use crate::{payload::QueryOptions, sealed::Sealed, Client, ConsulResult};
 
 #[derive(Clone, Default, Eq, PartialEq, Serialize, Deserialize, Debug)]
 #[serde(default)]
@@ -37,12 +37,24 @@ pub trait Session: Sealed {
         &self,
         session: SessionEntry,
         options: Option<QueryOptions>,
-    ) -> Result<SessionEntry>;
-    async fn destroy(&self, id: &str, options: Option<QueryOptions>) -> Result<bool>;
-    async fn info(&self, id: &str, options: Option<QueryOptions>) -> Result<Vec<SessionEntry>>;
-    async fn list(&self, options: Option<QueryOptions>) -> Result<Vec<SessionEntry>>;
-    async fn node(&self, node: &str, options: Option<QueryOptions>) -> Result<Vec<SessionEntry>>;
-    async fn renew(&self, id: &str, options: Option<QueryOptions>) -> Result<Vec<SessionEntry>>;
+    ) -> ConsulResult<SessionEntry>;
+    async fn destroy(&self, id: &str, options: Option<QueryOptions>) -> ConsulResult<bool>;
+    async fn info(
+        &self,
+        id: &str,
+        options: Option<QueryOptions>,
+    ) -> ConsulResult<Vec<SessionEntry>>;
+    async fn list(&self, options: Option<QueryOptions>) -> ConsulResult<Vec<SessionEntry>>;
+    async fn node(
+        &self,
+        node: &str,
+        options: Option<QueryOptions>,
+    ) -> ConsulResult<Vec<SessionEntry>>;
+    async fn renew(
+        &self,
+        id: &str,
+        options: Option<QueryOptions>,
+    ) -> ConsulResult<Vec<SessionEntry>>;
 }
 
 #[async_trait]
@@ -51,26 +63,38 @@ impl Session for Client {
         &self,
         session: SessionEntry,
         options: Option<QueryOptions>,
-    ) -> Result<SessionEntry> {
+    ) -> ConsulResult<SessionEntry> {
         self.put("/v1/session/create", session, None, options).await
     }
-    async fn destroy(&self, id: &str, options: Option<QueryOptions>) -> Result<bool> {
+    async fn destroy(&self, id: &str, options: Option<QueryOptions>) -> ConsulResult<bool> {
         let path = format!("/v1/session/destroy/{}", id);
         self.put(&path, None as Option<&()>, None, options).await
     }
-    async fn info(&self, id: &str, options: Option<QueryOptions>) -> Result<Vec<SessionEntry>> {
+    async fn info(
+        &self,
+        id: &str,
+        options: Option<QueryOptions>,
+    ) -> ConsulResult<Vec<SessionEntry>> {
         let path = format!("/v1/session/info/{}", id);
         self.get(&path, options).await
     }
-    async fn list(&self, options: Option<QueryOptions>) -> Result<Vec<SessionEntry>> {
+    async fn list(&self, options: Option<QueryOptions>) -> ConsulResult<Vec<SessionEntry>> {
         self.get("/v1/session/list", options).await
     }
-    async fn node(&self, node: &str, options: Option<QueryOptions>) -> Result<Vec<SessionEntry>> {
+    async fn node(
+        &self,
+        node: &str,
+        options: Option<QueryOptions>,
+    ) -> ConsulResult<Vec<SessionEntry>> {
         let path = format!("/v1/session/node/{}", node);
         self.get(&path, options).await
     }
 
-    async fn renew(&self, id: &str, options: Option<QueryOptions>) -> Result<Vec<SessionEntry>> {
+    async fn renew(
+        &self,
+        id: &str,
+        options: Option<QueryOptions>,
+    ) -> ConsulResult<Vec<SessionEntry>> {
         let path = format!("/v1/session/renew/{}", id);
         self.put(&path, None as Option<&()>, None, options).await
     }

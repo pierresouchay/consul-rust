@@ -10,6 +10,7 @@
 * Sealed internal trait implementations to prevent re-implementation.
 * Export all traits in crate root.
 * Move payload types into `crate::payload`.
+* Rewrite request impls
 
 ## 0.4.2
 

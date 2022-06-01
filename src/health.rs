@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use async_trait::async_trait;
 
-use crate::{errors::Result, payload::QueryOptions, sealed::Sealed, AgentService, Client};
+use crate::{payload::QueryOptions, sealed::Sealed, AgentService, Client, ConsulResult};
 
 #[derive(Eq, Default, PartialEq, Serialize, Deserialize, Debug)]
 #[serde(default)]
@@ -70,7 +70,7 @@ pub trait Health: Sealed {
         tag: Option<&str>,
         passing_only: bool,
         options: Option<QueryOptions>,
-    ) -> Result<Vec<ServiceEntry>>;
+    ) -> ConsulResult<Vec<ServiceEntry>>;
 }
 
 #[async_trait]
@@ -81,7 +81,7 @@ impl Health for Client {
         tag: Option<&str>,
         passing_only: bool,
         options: Option<QueryOptions>,
-    ) -> Result<Vec<ServiceEntry>> {
+    ) -> ConsulResult<Vec<ServiceEntry>> {
         let mut params = HashMap::new();
         let path = format!("/v1/health/service/{}", service);
         if passing_only {

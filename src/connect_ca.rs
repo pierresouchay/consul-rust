@@ -1,7 +1,7 @@
 use async_trait::async_trait;
 use serde_json::Value;
 
-use crate::{errors::Result, payload::QueryOptions, sealed::Sealed, Client};
+use crate::{payload::QueryOptions, sealed::Sealed, Client, ConsulResult};
 
 /// This trait provides the ability to interact with the Secure Session API.
 #[derive(Default, Serialize, Deserialize, Debug)]
@@ -50,9 +50,13 @@ pub struct CARoot {
 
 #[async_trait]
 pub trait ConnectCA: Sealed {
-    async fn list_ca_root_certs(&self, options: Option<QueryOptions>) -> Result<CARootList>;
-    async fn get_ca_config(&self, options: Option<QueryOptions>) -> Result<CAConfig>;
-    async fn update_ca_config(&self, conf: CAConfig, options: Option<QueryOptions>) -> Result<()>;
+    async fn list_ca_root_certs(&self, options: Option<QueryOptions>) -> ConsulResult<CARootList>;
+    async fn get_ca_config(&self, options: Option<QueryOptions>) -> ConsulResult<CAConfig>;
+    async fn update_ca_config(
+        &self,
+        conf: CAConfig,
+        options: Option<QueryOptions>,
+    ) -> ConsulResult<()>;
 }
 
 #[async_trait]
@@ -60,14 +64,14 @@ impl ConnectCA for Client {
     /// See the [API documentation] for more information.
     ///
     /// [API documentation]: https://www.consul.io/api/connect/ca.html#list-ca-root-certificates
-    async fn list_ca_root_certs(&self, options: Option<QueryOptions>) -> Result<CARootList> {
+    async fn list_ca_root_certs(&self, options: Option<QueryOptions>) -> ConsulResult<CARootList> {
         self.get("/v1/connect/ca/roots", options).await
     }
 
     /// See the [API documentation] for more information.
     ///
     /// [API documentation]: https://www.consul.io/api/connect/ca.html#get-ca-configuration
-    async fn get_ca_config(&self, options: Option<QueryOptions>) -> Result<CAConfig> {
+    async fn get_ca_config(&self, options: Option<QueryOptions>) -> ConsulResult<CAConfig> {
         self.get("/v1/connect/ca/configuration", options).await
     }
 
@@ -78,7 +82,7 @@ impl ConnectCA for Client {
         &self,
         payload: CAConfig,
         options: Option<QueryOptions>,
-    ) -> Result<()> {
+    ) -> ConsulResult<()> {
         self.put("/v1/connect/ca/configuration", payload, None, options).await
     }
 }
