@@ -1,35 +1,51 @@
 use async_trait::async_trait;
 
-use crate::{sealed::Sealed, Client};
-
-pub struct Service {}
+use crate::{sealed::Sealed, AgentService, Client, ConsulResult, HealthCheck, ServiceEntry, payload::CatalogRegistrationPayload};
 
 /// The `/agent/service` endpoints interact with services on the local agent in
 /// Consul. These should not be confused with services in the catalog.
 #[async_trait]
 pub trait AgentServices: Sealed {
-    async fn list_local_services(&self) -> Result<Vec<Service>, ()>;
-    async fn get_local_service_config(&self) -> Result<(), ()>;
-    async fn get_local_service_health(&self) -> Result<(), ()>;
-    async fn get_local_service_health_by_id(&self) -> Result<(), ()>;
-    async fn register_service(&self) -> Result<(), ()>;
+    async fn list_local_services(&self) -> ConsulResult<Vec<AgentService>>;
+    async fn get_local_service_config<S: AsRef<str> + Send>(
+        &self,
+        id: S,
+    ) -> ConsulResult<ServiceEntry>;
+    async fn get_local_service_health<S: AsRef<str> + Send>(
+        &self,
+        name: S,
+    ) -> ConsulResult<HealthCheck>;
+    async fn get_local_service_health_by_id<S: AsRef<str> + Send>(
+        &self,
+        id: S,
+    ) -> ConsulResult<HealthCheck>;
+    async fn register_service(&self, payload: CatalogRegistrationPayload) -> ConsulResult<()>;
 }
 
 #[async_trait]
 impl AgentServices for Client {
-    async fn list_local_services(&self) -> Result<Vec<Service>, ()> {
-        todo!()
+    async fn list_local_services(&self) -> ConsulResult<Vec<AgentService>> {
+        self.get("/v1/agent/services", None).await
     }
-    async fn get_local_service_config(&self) -> Result<(), ()> {
-        todo!()
+    async fn get_local_service_config<S: AsRef<str> + Send>(
+        &self,
+        name: S,
+    ) -> ConsulResult<ServiceEntry> {
+        self.get(format!("/v1/agent/services/{}", name.as_ref()), None).await
     }
-    async fn get_local_service_health(&self) -> Result<(), ()> {
-        todo!()
+    async fn get_local_service_health<S: AsRef<str> + Send>(
+        &self,
+        name: S,
+    ) -> ConsulResult<HealthCheck> {
+        self.get(format!("/v1/agent/health/service/{}", name.as_ref()), None).await
     }
-    async fn get_local_service_health_by_id(&self) -> Result<(), ()> {
-        todo!()
+    async fn get_local_service_health_by_id<S: AsRef<str> + Send>(
+        &self,
+        id: S,
+    ) -> ConsulResult<HealthCheck> {
+        self.get(format!("/v1/agent/health/service/id/{}", id.as_ref()), None).await
     }
-    async fn register_service(&self) -> Result<(), ()> {
-        todo!()
+    async fn register_service(&self, payload: CatalogRegistrationPayload) -> ConsulResult<()> {
+        self.put("/v1/agent/service/register", payload, None, None).await
     }
 }
