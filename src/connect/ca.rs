@@ -48,10 +48,25 @@ pub struct CARoot {
     modify_index: u64,
 }
 
+/// This trait provides implementations of the Consul `/connect/ca` endpoint.
+///
+/// These endpoints provide tools for interacting with Connect's Certificate
+/// Authority mechanism.
+///
+/// See the [API documentation](https://www.consul.io/api-docs/connect/ca) for more information.
 #[async_trait]
 pub trait ConnectCA: Sealed {
+    /// See the [API documentation] for more information.
+    ///
+    /// [API documentation]: https://www.consul.io/api/connect/ca.html#list-ca-root-certificates
     async fn list_ca_root_certs(&self, options: Option<QueryOptions>) -> ConsulResult<CARootList>;
+    /// See the [API documentation] for more information.
+    ///
+    /// [API documentation]: https://www.consul.io/api/connect/ca.html#get-ca-configuration
     async fn get_ca_config(&self, options: Option<QueryOptions>) -> ConsulResult<CAConfig>;
+    /// See the [API documentation] for more information.
+    ///
+    /// [API documentation]: https://www.consul.io/api/connect/ca.html#update-ca-configuration
     async fn update_ca_config(
         &self,
         conf: CAConfig,
@@ -61,23 +76,14 @@ pub trait ConnectCA: Sealed {
 
 #[async_trait]
 impl ConnectCA for Client {
-    /// See the [API documentation] for more information.
-    ///
-    /// [API documentation]: https://www.consul.io/api/connect/ca.html#list-ca-root-certificates
     async fn list_ca_root_certs(&self, options: Option<QueryOptions>) -> ConsulResult<CARootList> {
         self.get("/v1/connect/ca/roots", options).await
     }
 
-    /// See the [API documentation] for more information.
-    ///
-    /// [API documentation]: https://www.consul.io/api/connect/ca.html#get-ca-configuration
     async fn get_ca_config(&self, options: Option<QueryOptions>) -> ConsulResult<CAConfig> {
         self.get("/v1/connect/ca/configuration", options).await
     }
 
-    /// See the [API documentation] for more information.
-    ///
-    /// [API documentation]: https://www.consul.io/api/connect/ca.html#update-ca-configuration
     async fn update_ca_config(
         &self,
         payload: CAConfig,

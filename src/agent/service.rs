@@ -2,9 +2,7 @@ use std::collections::HashMap;
 
 use async_trait::async_trait;
 
-use crate::{
-    sealed::Sealed, Client, ConsulResult, HealthCheck, ServiceWeights, TaggedAddress,
-};
+use crate::{sealed::Sealed, Client, ConsulResult, HealthCheck, ServiceWeights, TaggedAddress};
 
 /// A service registered with the local agent.
 ///
