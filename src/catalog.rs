@@ -97,7 +97,7 @@ pub struct CatalogNode {
 
 /// Datatype containing payload data for the [crate::Catalog::register] method.
 ///
-/// For more information, consult https://www.consul.io/api-docs/catalog#json-request-body-schema.
+/// For more information, consult the [API documentation](https://www.consul.io/api-docs/catalog#json-request-body-schema).
 #[derive(Eq, Default, PartialEq, Serialize, Deserialize, Debug)]
 #[serde(default)]
 pub struct CatalogRegistrationPayload {
@@ -165,7 +165,7 @@ pub trait Catalog: Sealed {
     /// defined in the `Agent` trait for registration as they are simpler and
     /// perform anti-entropy.
     ///
-    /// For more information, consult https://www.consul.io/api-docs/catalog#register-entity.
+    /// For more information, consult the [API documentation](https://www.consul.io/api-docs/catalog#register-entity).
     async fn register(
         &self,
         reg: CatalogRegistrationPayload,
@@ -177,7 +177,7 @@ pub trait Catalog: Sealed {
     /// in the `Agent` trait for deregistration as they are simpler and
     /// perform anti-entropy.
     ///
-    /// For more information, consult https://www.consul.io/api/catalog.html#deregister-entity.
+    /// For more information, consult the [API documentation](https://www.consul.io/api/catalog.html#deregister-entity).
     async fn deregister(
         &self,
         payload: CatalogDeregistrationPayload,
@@ -188,12 +188,12 @@ pub trait Catalog: Sealed {
     /// will be sorted in ascending order based on the estimated median round
     /// trip time from the server to the servers in that datacenter.
     ///
-    /// For more information, consult https://www.consul.io/api/catalog.html#list-datacenters
+    /// For more information, consult the [API documentation](https://www.consul.io/api/catalog.html#list-datacenters).
     async fn list_datacenters(&self) -> ConsulResult<Vec<String>>;
 
     /// This endpoint and returns the nodes registered in a given datacenter.
     ///
-    /// For more information, consult https://www.consul.io/api/catalog.html#list-nodes.
+    /// For more information, consult the [API documentation](https://www.consul.io/api/catalog.html#list-nodes).
     async fn list_datacenter_nodes(
         &self,
         q: Option<QueryOptions>,
@@ -201,7 +201,7 @@ pub trait Catalog: Sealed {
 
     /// This endpoint returns the services registered in a given datacenter.
     ///
-    /// For more information, consult https://www.consul.io/api-docs/catalog#list-services.
+    /// For more information, consult the [API documentation](https://www.consul.io/api-docs/catalog#list-services).
     async fn list_datacenter_services(
         &self,
         q: Option<QueryOptions>,

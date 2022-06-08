@@ -144,6 +144,7 @@ impl Config {
     }
 }
 
+/// Enumeration of API error types.
 #[derive(Debug, Error)]
 pub enum ConsulError {
     /// The Consul API returned an error.

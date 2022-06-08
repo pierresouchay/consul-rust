@@ -78,7 +78,10 @@ pub struct ServiceRegistrationPayload {
     #[serde(rename = "EnableTagOverride")]
     pub enable_tag_override: bool,
 }
-/// The `/agent/service` endpoints interact with services on the local agent in
+/// This trait provides methods for interacting with the `/agent/service`
+/// endpoints.
+///
+/// This endpoint interact with services on the local agent in
 /// Consul. These should not be confused with services in the catalog.
 #[async_trait]
 pub trait AgentServices: Sealed {
