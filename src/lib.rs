@@ -74,6 +74,7 @@ pub use connect::*;
 pub use health::*;
 pub use kv::*;
 pub use session::*;
+
 #[derive(Clone, Debug)]
 pub struct Client {
     config: Config,
@@ -170,6 +171,7 @@ pub struct QueryOptions {
 
 /// Type alias for `Result<T, ConsulError>`.
 pub type ConsulResult<T> = Result<T, ConsulError>;
+
 pub(crate) mod sealed {
     ///! Internal module to prevent re-implementation of strictly
     /// client-related traits.
