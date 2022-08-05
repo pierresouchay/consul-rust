@@ -56,7 +56,7 @@ pub struct ServiceConfig {
     pub port: u16,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, Default)]
 pub struct ServiceRegistrationPayload {
     #[serde(rename = "Name")]
     /// Specifies the logical name of the service.
