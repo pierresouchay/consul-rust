@@ -6,7 +6,7 @@ edition = "2021"
 authors = ["Andrew Useckas <andrew.useckas@threat-x.com>", "Stu Small <stuart.small@threat-x.com>", "YoungKing <yanckin@gmail.com>", "Pierre Souchay <https://github.com/pierresouchay>", "Tomer Shalev <https://github.com/tomers>", "Kaylen Dart <https://github.com/kaylendog>"]
 description = "Rust client libray for Consul HTTP API"
 documentation = "https://docs.rs/consul/"
-repository = "https://github.com/kaylendog/consul-rust"
+repository = "https://github.com/kaylendog/consul-oxide"
 license = "MIT/Apache-2.0"
 
 readme = "README.md"

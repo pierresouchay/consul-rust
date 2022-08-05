@@ -1,6 +1,6 @@
-# consul-rust [![Checks](https://github.com/kaylendog/consul-rust/actions/workflows/check.yml/badge.svg)](https://github.com/kaylendog/consul-rust/actions/workflows/check.yml)
+# consul-oxide [![Checks](https://github.com/kaylendog/consul-oxide/actions/workflows/check.yml/badge.svg)](https://github.com/kaylendog/consul-oxide/actions/workflows/check.yml)
 
-`consul-rust` is a library for interacting with Consul agents via their HTTP API.
+`consul-oxide` is a library for interacting with Consul agents via their HTTP API.
 Consul is a service mesh solution providing a full featured control plane
 with service discovery, configuration, and segmentation functionality. 
 
@@ -16,7 +16,7 @@ The key features of Consul, and thus this crate, are:
 -   Secure Service Communication
 -   Multi Datacenter Support
 
-`consul-rust` aims to support all of these to the best of its ability. Each feature is available as a compiler feature, and can be enabled by using the `discovery`, `health`, `kv`, `ssc` and `mds` features respectively. By default, all features are enabled.
+`consul-oxide` aims to support all of these to the best of its ability. Each feature is available as a compiler feature, and can be enabled by using the `discovery`, `health`, `kv`, `ssc` and `mds` features respectively. By default, all features are enabled.
 
 ## Usage
 
@@ -43,7 +43,7 @@ let agents = client.agents(false).await;
 
 ## Installation
 
-Simply include the consul-rust in your Cargo dependencies.
+Simply include the consul-oxide in your Cargo dependencies.
 
 ```toml
 [dependencies]
@@ -59,4 +59,4 @@ available. As an alternative, you can use versions of this library below
 
 ## License
 
-`consul-rust` is licensed under a combined MIT/Apache-2.0 license. See the [`LICENSE-MIT`](LICENSE-MIT) and [`LICENSE-APACHE`](LICENSE-APACHE) file for more information.
+`consul-oxide` is licensed under a combined MIT/Apache-2.0 license. See the [`LICENSE-MIT`](LICENSE-MIT) and [`LICENSE-APACHE`](LICENSE-APACHE) file for more information.
