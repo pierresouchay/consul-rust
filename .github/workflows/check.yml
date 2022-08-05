@@ -1,9 +1,6 @@
 name: Checks
 
 on:
-  push:
-    branches:
-      - main
   pull_request:
     branches:
       - main
@@ -12,48 +9,6 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  check:
-    name: Run cargo check 
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v2
-      - name: Set up Rust toolchain
-        uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: stable
-          override: true
-      - name: Set up environment cache
-        uses: Swatinem/rust-cache@v2
-      - uses: actions-rs/cargo@v1
-        with:
-          command: check
-
-  test:
-    name: Run test suites
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v2
-      - name: Set up Rust toolchain
-        uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: stable
-          override: true
-      - name: Set up environment cache
-        uses: Swatinem/rust-cache@v2
-      - name: Run cargo test
-        uses: actions-rs/cargo@v1
-        with:
-          command: test
-    services:
-      consul:
-        image: consul
-        ports: 
-          - 8500:8500
-
   fmt:
     name: Run rustfmt
     runs-on: ubuntu-latest
@@ -75,47 +30,21 @@ jobs:
           command: fmt
           args: --all -- --check
 
-  clippy:
-    name: Run clippy linter
+  reviewdog:
+    name: Run clippy and cargo-check with Reviewdog
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
-      - name: Setup Rust toolchain
+      - name: Set up Rust toolchain
         uses: actions-rs/toolchain@v1
         with:
           profile: minimal
           toolchain: stable
           override: true
-      - name: Install clippy toolchain component
-        run: rustup component add clippy
       - name: Set up environment cache
         uses: Swatinem/rust-cache@v2
-      - uses: actions-rs/cargo@v1
-        with:
-          command: clippy
-          args: --all-targets --all-features -- -D warnings
-
-  codecov:
-    name: Generate code coverage with Tarpaulin
-    runs-on: ubuntu-latest
-    container:
-      image: xd009642/tarpaulin
-      options: --security-opt seccomp=unconfined
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v2
-      - name: Set up environment cache
-        uses: Swatinem/rust-cache@v2
-      - name: Generate code coverage
-        run: |
-          cargo tarpaulin --verbose --all-features --workspace --timeout 120 --out Xml
-      - name: Upload to codecov.io
-        uses: codecov/codecov-action@v2
-        with:
-          fail_ci_if_error: true
-    services:
-      consul:
-        image: consul
-        ports: 
-          - 8500:8500
+      - name: Run reviewdog
+        uses: reviewdog/action-actionlint@v1
+          with:
+            reporter: github-pr-review

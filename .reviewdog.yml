@@ -1,0 +1,10 @@
+runner:
+  check:
+    cmd: cargo check -q --message-format=short
+    format: cargo-check
+    name: cargo check
+
+  clippy:
+    cmd: cargo clippy -q --message-format=short
+    format: clippy
+    name: clippy
