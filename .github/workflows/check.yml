@@ -97,3 +97,8 @@ jobs:
         uses: codecov/codecov-action@v2
         with:
           fail_ci_if_error: true
+    services:
+      consul:
+        image: consul
+        ports: 
+          - 8500:8500
