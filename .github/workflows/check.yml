@@ -46,6 +46,7 @@ jobs:
     services:
       consul:
         image: consul
+        ports: 8500:8500
 
   fmt:
     name: Run rustfmt
