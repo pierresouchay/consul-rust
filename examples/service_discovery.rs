@@ -1,4 +1,4 @@
-use consul::{AgentServices, Client, Config, ServiceRegistrationPayload};
+use consul_oxide::{AgentServices, Client, Config, ServiceRegistrationPayload};
 
 #[tokio::main]
 async fn main() {

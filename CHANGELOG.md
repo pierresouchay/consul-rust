@@ -11,6 +11,8 @@
 * Export all traits in crate root.
 * Move payload types into `crate::payload`.
 * Rewrite request impls
+* Update workflows
+* Rename to `consul_oxide` to avoid confusion with the existing `consul` crate.
 
 ## 0.4.2
 

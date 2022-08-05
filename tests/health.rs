@@ -1,9 +1,9 @@
-extern crate consul;
-use consul::{Client, Config};
+extern crate consul_oxide;
+use consul_oxide::{Client, Config};
 
 #[tokio::test]
 async fn health_test() {
-    use consul::Health;
+    use consul_oxide::Health;
     let config = Config::default();
     let client = Client::new(config);
     // An existing service for a agent in dev mode

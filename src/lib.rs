@@ -34,7 +34,7 @@
 //!
 //! Requests can be made to the Consul agent by importing the relevant trait:
 //! ```
-//! use consul::Agent;
+//! use consul_oxide::Agent;
 //!
 //! let client = Client::new(Config::new().unwrap());
 //! let agents = client.agents(false).await;

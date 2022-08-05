@@ -1,7 +1,7 @@
-extern crate consul;
+extern crate consul_oxide;
 extern crate rand;
 
-use consul::{Client, Config, Session, SessionEntry};
+use consul_oxide::{Client, Config, Session, SessionEntry};
 use rand::{distributions::Alphanumeric, thread_rng, Rng};
 
 #[tokio::test]

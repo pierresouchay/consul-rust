@@ -1,9 +1,9 @@
-extern crate consul;
-use consul::{Client, Config};
+extern crate consul_oxide;
+use consul_oxide::{Client, Config};
 
 #[tokio::test]
 async fn ds_test() {
-    use consul::Catalog;
+    use consul_oxide::Catalog;
     let config = Config::new_from_env();
     let client = Client::new(config);
     let r = client.list_datacenters().await.unwrap();
@@ -12,7 +12,7 @@ async fn ds_test() {
 
 #[tokio::test]
 async fn ds_services_test() {
-    use consul::Catalog;
+    use consul_oxide::Catalog;
     let config = Config::default();
     let client = Client::new(config);
     let r = client.list_datacenter_services(None).await.unwrap();

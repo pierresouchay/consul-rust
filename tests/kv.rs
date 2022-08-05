@@ -1,9 +1,9 @@
-extern crate consul;
-use consul::{Client, Config, KVPair};
+extern crate consul_oxide;
+use consul_oxide::{Client, Config, KVPair};
 
 #[tokio::test]
 async fn kv_test() {
-    use consul::KV;
+    use consul_oxide::KV;
     let config = Config::default();
     let client = Client::new(config);
     let r = client.list("", None).await.unwrap();
