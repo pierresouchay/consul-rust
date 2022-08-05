@@ -49,9 +49,9 @@ impl Client {
         // if datacenter option is specified, set
         let datacenter: Option<String> = options
             .and_then(|o| o.datacenter)
-            .or_else(|| self.config.datacenter.as_ref().map(|s| s.clone()));
+            .or_else(|| self.config.datacenter.as_ref().cloned());
         if let Some(dc) = datacenter {
-            params.insert(String::from("dc"), dc.to_owned());
+            params.insert(String::from("dc"), dc);
         }
         // parse url and create builder
         let url = Url::parse_with_params(
@@ -79,7 +79,7 @@ impl Client {
         if response.is_empty() {
             return Ok(None);
         }
-        let response = serde_json::from_str(&response).map_err(|e| ConsulError::DecodeError(e))?;
+        let response = serde_json::from_str(&response).map_err(ConsulError::DecodeError)?;
         Ok(response)
     }
 
@@ -104,9 +104,9 @@ impl Client {
         // if datacenter option is specified, set
         let datacenter: Option<String> = options
             .and_then(|o| o.datacenter)
-            .or_else(|| self.config.datacenter.as_ref().map(|s| s.clone()));
+            .or_else(|| self.config.datacenter.as_ref().cloned());
         if let Some(dc) = datacenter {
-            params.insert(String::from("dc"), dc.to_owned());
+            params.insert(String::from("dc"), dc);
         }
         // parse url and create builder
         let url = Url::parse_with_params(
@@ -127,7 +127,7 @@ impl Client {
             .await
             .and_then_async(|x| async { x.json::<Response>().await })
             .await
-            .map_err(|err| ConsulError::HttpError(err))
+            .map_err(ConsulError::HttpError)
     }
     /// This method makes a GET request with query parameters to the given path.
     pub(crate) async fn get_with_params<Path: AsRef<str>, T: DeserializeOwned>(

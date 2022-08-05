@@ -132,12 +132,10 @@ async fn session_node_test() {
 
     let session_entries = client.node(&system_hostname, None).await.unwrap();
 
-    let filtered_session_entries: Vec<&SessionEntry> = session_entries
+    
+    assert_eq!(session_entries
         .iter()
-        .filter(|s| s.name.as_ref().unwrap() == &unique_test_identifier)
-        .collect();
-
-    assert_eq!(filtered_session_entries.len(), 1);
+        .filter(|s| s.name.as_ref().unwrap() == &unique_test_identifier).count(), 1);
 
     tear_down(&client, &created_session_entry_id).await;
 }
@@ -158,7 +156,7 @@ async fn session_renew_test() {
 }
 
 async fn set_up() -> (Client, String) {
-    let config = Config::new();
+    let config = Config::default();
     let client = Client::new(config);
 
     let unique_test_identifier: String =
@@ -176,11 +174,7 @@ async fn get_number_of_session_entries_with_matching_name(
     unique_test_identifier: &str,
 ) -> usize {
     let session_entries = client.list(None).await.unwrap();
-
-    let filtered_session_entries: Vec<&SessionEntry> = session_entries
+    session_entries
         .iter()
-        .filter(|s| s.name.as_ref().unwrap() == unique_test_identifier)
-        .collect();
-
-    filtered_session_entries.len()
+        .filter(|s| s.name.as_ref().unwrap() == unique_test_identifier).count()
 }

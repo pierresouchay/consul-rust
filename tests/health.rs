@@ -4,7 +4,7 @@ use consul::{Client, Config};
 #[tokio::test]
 async fn health_test() {
     use consul::Health;
-    let config = Config::new();
+    let config = Config::default();
     let client = Client::new(config);
     // An existing service for a agent in dev mode
     let snodes =

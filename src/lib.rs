@@ -96,17 +96,6 @@ pub struct Config {
 }
 
 impl Config {
-    pub fn new() -> Config {
-        let client = ClientBuilder::new().build().unwrap();
-        Config {
-            address: String::from("http://localhost:8500"),
-            datacenter: None,
-            http_client: client,
-            token: None,
-            wait_time: None,
-        }
-    }
-
     pub fn new_from_env() -> Config {
         let consul_addr = match env::var("CONSUL_HTTP_ADDR") {
             Ok(val) => {
@@ -140,6 +129,19 @@ impl Config {
             datacenter: None,
             http_client: client,
             token,
+            wait_time: None,
+        }
+    }
+}
+
+impl Default for Config {
+    fn default() -> Self {
+        let client = ClientBuilder::new().build().unwrap();
+        Config {
+            address: String::from("http://localhost:8500"),
+            datacenter: None,
+            http_client: client,
+            token: None,
             wait_time: None,
         }
     }

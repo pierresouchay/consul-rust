@@ -2,7 +2,7 @@ use consul::{AgentServices, Client, Config, ServiceRegistrationPayload};
 
 #[tokio::main]
 async fn main() {
-    let client = Client::new(Config::new());
+    let client = Client::new(Config::default());
     client
         .register_service(ServiceRegistrationPayload {
             name: "My Service".to_string(),
