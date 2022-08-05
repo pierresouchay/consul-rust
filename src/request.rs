@@ -47,9 +47,8 @@ impl Client {
         // unwrap parameters
         let mut params = params.unwrap_or_default();
         // if datacenter option is specified, set
-        let datacenter: Option<String> = options
-            .and_then(|o| o.datacenter)
-            .or_else(|| self.config.datacenter.as_ref().cloned());
+        let datacenter: Option<String> =
+            options.and_then(|o| o.datacenter).or_else(|| self.config.datacenter.as_ref().cloned());
         if let Some(dc) = datacenter {
             params.insert(String::from("dc"), dc);
         }
@@ -102,9 +101,8 @@ impl Client {
         // unwrap parameters
         let mut params = params.unwrap_or_default();
         // if datacenter option is specified, set
-        let datacenter: Option<String> = options
-            .and_then(|o| o.datacenter)
-            .or_else(|| self.config.datacenter.as_ref().cloned());
+        let datacenter: Option<String> =
+            options.and_then(|o| o.datacenter).or_else(|| self.config.datacenter.as_ref().cloned());
         if let Some(dc) = datacenter {
             params.insert(String::from("dc"), dc);
         }

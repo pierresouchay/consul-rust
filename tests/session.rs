@@ -132,10 +132,13 @@ async fn session_node_test() {
 
     let session_entries = client.node(&system_hostname, None).await.unwrap();
 
-    
-    assert_eq!(session_entries
-        .iter()
-        .filter(|s| s.name.as_ref().unwrap() == &unique_test_identifier).count(), 1);
+    assert_eq!(
+        session_entries
+            .iter()
+            .filter(|s| s.name.as_ref().unwrap() == &unique_test_identifier)
+            .count(),
+        1
+    );
 
     tear_down(&client, &created_session_entry_id).await;
 }
@@ -174,7 +177,5 @@ async fn get_number_of_session_entries_with_matching_name(
     unique_test_identifier: &str,
 ) -> usize {
     let session_entries = client.list(None).await.unwrap();
-    session_entries
-        .iter()
-        .filter(|s| s.name.as_ref().unwrap() == unique_test_identifier).count()
+    session_entries.iter().filter(|s| s.name.as_ref().unwrap() == unique_test_identifier).count()
 }
