@@ -4,7 +4,7 @@ on:
   push:
     # ensure workflow does not run on master branch
     branches-ignore:
-      - master
+      - main
     tags:
       - '*.*.*'
 
@@ -13,6 +13,7 @@ env:
 
 jobs:
   publish:
+    runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
     - uses: actions-rs/toolchain@v1
