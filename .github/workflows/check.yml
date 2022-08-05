@@ -1,9 +1,12 @@
 name: Checks
 
 on:
+  push:
+    branches:
+      - main
   pull_request:
     branches:
-      - master
+      - main
 
 env:
   CARGO_TERM_COLOR: always
