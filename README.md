@@ -6,6 +6,8 @@ with service discovery, configuration, and segmentation functionality.
 
 For more information on what Consul is, read the [Consul documentation](https://www.consul.io/docs/).
 
+This library is a fork of [consul-rust](https://github.com/pierresouchay/consul-rust) by  pierresouchay and contributors. Full credit goes to them for the original library.
+
 ## Supported Features
 
 The key features of Consul, and thus this crate, are:
