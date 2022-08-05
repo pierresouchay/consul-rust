@@ -25,7 +25,8 @@
 //!
 //! The `Client` struct provides the main entry point for the library.
 //! ```
-//! let config = Config::new().unwrap();
+//! use consul_oxide::{Client, Config};
+//! let config = Config::default();
 //! let client = Client::new(config);
 //! ```
 //! You can pass in custom configuration by using the `Config` datatype. By
@@ -34,10 +35,10 @@
 //!
 //! Requests can be made to the Consul agent by importing the relevant trait:
 //! ```
-//! use consul_oxide::Agent;
+//! use consul_oxide::{Agent, Client, Config};
 //!
-//! let client = Client::new(Config::new().unwrap());
-//! let agents = client.agents(false).await;
+//! let client = Client::new(Config::default());
+//! let agents = async { client.list_members(false).await };
 //! ```
 //!
 //! ## Async Support

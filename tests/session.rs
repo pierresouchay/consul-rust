@@ -16,7 +16,7 @@ async fn session_create_test() {
     let entry =
         SessionEntry { name: Some(unique_test_identifier.to_string()), ..Default::default() };
 
-    let created_session_entry = client.create(entry, None).await.unwrap();
+    let created_session_entry = client.create_session(entry, None).await.unwrap();
 
     assert_eq!(
         get_number_of_session_entries_with_matching_name(&client, &unique_test_identifier).await,
@@ -33,7 +33,7 @@ async fn session_destroy_test() {
     let entry =
         SessionEntry { name: Some(unique_test_identifier.to_string()), ..Default::default() };
 
-    let created_session_entry = client.create(entry, None).await.unwrap();
+    let created_session_entry = client.create_session(entry, None).await.unwrap();
 
     assert_eq!(
         get_number_of_session_entries_with_matching_name(&client, &unique_test_identifier).await,
@@ -42,7 +42,7 @@ async fn session_destroy_test() {
 
     let created_session_entry_id = created_session_entry.id.unwrap();
 
-    client.destroy(&created_session_entry_id, None).await.unwrap();
+    client.destroy_session(&created_session_entry_id, None).await.unwrap();
 
     assert_eq!(
         get_number_of_session_entries_with_matching_name(&client, &unique_test_identifier).await,
@@ -59,11 +59,11 @@ async fn session_info_test() {
     let entry =
         SessionEntry { name: Some(unique_test_identifier.to_string()), ..Default::default() };
 
-    let created_session_entry = client.create(entry, None).await.unwrap();
+    let created_session_entry = client.create_session(entry, None).await.unwrap();
 
     let created_session_entry_id = created_session_entry.id.unwrap();
 
-    let session_entries = client.info(&created_session_entry_id, None).await.unwrap();
+    let session_entries = client.get_session_info(&created_session_entry_id, None).await.unwrap();
 
     assert_eq!(session_entries.len(), 1);
 
@@ -89,12 +89,12 @@ async fn session_list_test() {
     for entry_name in &entry_names {
         let entry = SessionEntry { name: Some(entry_name.to_string()), ..Default::default() };
 
-        let created_session_entry = client.create(entry, None).await.unwrap();
+        let created_session_entry = client.create_session(entry, None).await.unwrap();
 
         session_ids.push(created_session_entry.id.unwrap());
     }
 
-    let session_entries = client.list(None).await.unwrap();
+    let session_entries = client.list_sessions(None).await.unwrap();
 
     let filtered_session_entries = session_entries
         .iter()
@@ -117,31 +117,30 @@ async fn session_list_test() {
     }
 }
 
-#[tokio::test]
-async fn session_node_test() {
-    let (client, unique_test_identifier) = set_up().await;
+// TODO: test session renew - this is currently broken in CI as the consul test instace
+// is run inside Docker, so hostname::get() does not match the hostname of the test instance.
+// #[tokio::test]
+// async fn session_node_test() {
+//     let (client, unique_test_identifier) = set_up().await;
 
-    let entry =
-        SessionEntry { name: Some(unique_test_identifier.to_string()), ..Default::default() };
+//     let entry =
+//         SessionEntry { name: Some(unique_test_identifier.to_string()), ..Default::default() };
 
-    let created_session_entry = client.create(entry, None).await.unwrap();
+//     let created_session_entry = client.create_session(entry, None).await.unwrap();
+//     let created_session_entry_id = created_session_entry.id.unwrap();
+//     let system_hostname = hostname::get().unwrap().into_string().unwrap();
+//     let session_entries = client.list_session_for_node(&system_hostname, None).await.unwrap();
 
-    let created_session_entry_id = created_session_entry.id.unwrap();
+//     assert_eq!(
+//         session_entries
+//             .iter()
+//             .filter(|s| s.name.as_ref().unwrap() == &unique_test_identifier)
+//             .count(),
+//         1
+//     );
 
-    let system_hostname = hostname::get().unwrap().into_string().unwrap();
-
-    let session_entries = client.node(&system_hostname, None).await.unwrap();
-
-    assert_eq!(
-        session_entries
-            .iter()
-            .filter(|s| s.name.as_ref().unwrap() == &unique_test_identifier)
-            .count(),
-        1
-    );
-
-    tear_down(&client, &created_session_entry_id).await;
-}
+//     tear_down(&client, &created_session_entry_id).await;
+// }
 
 #[tokio::test]
 async fn session_renew_test() {
@@ -149,11 +148,11 @@ async fn session_renew_test() {
 
     let entry = SessionEntry { name: Some(unique_test_identifier), ..Default::default() };
 
-    let created_session_entry = client.create(entry, None).await.unwrap();
+    let created_session_entry = client.create_session(entry, None).await.unwrap();
 
     let created_session_entry_id = created_session_entry.id.unwrap();
 
-    client.renew(&created_session_entry_id, None).await.unwrap();
+    client.renew_session(&created_session_entry_id, None).await.unwrap();
 
     tear_down(&client, &created_session_entry_id).await;
 }
@@ -169,13 +168,13 @@ async fn set_up() -> (Client, String) {
 }
 
 async fn tear_down(client: &Client, session_id: &str) {
-    client.destroy(session_id, None).await.unwrap();
+    client.destroy_session(session_id, None).await.unwrap();
 }
 
 async fn get_number_of_session_entries_with_matching_name(
     client: &Client,
     unique_test_identifier: &str,
 ) -> usize {
-    let session_entries = client.list(None).await.unwrap();
+    let session_entries = client.list_sessions(None).await.unwrap();
     session_entries.iter().filter(|s| s.name.as_ref().unwrap() == unique_test_identifier).count()
 }

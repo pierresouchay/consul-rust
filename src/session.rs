@@ -33,24 +33,25 @@ pub struct SessionEntry {
 
 #[async_trait]
 pub trait Session: Sealed {
-    async fn create(
+    async fn create_session(
         &self,
         session: SessionEntry,
         options: Option<QueryOptions>,
     ) -> ConsulResult<SessionEntry>;
-    async fn destroy(&self, id: &str, options: Option<QueryOptions>) -> ConsulResult<bool>;
-    async fn info(
+    async fn destroy_session(&self, id: &str, options: Option<QueryOptions>) -> ConsulResult<bool>;
+    async fn get_session_info(
         &self,
         id: &str,
         options: Option<QueryOptions>,
     ) -> ConsulResult<Vec<SessionEntry>>;
-    async fn list(&self, options: Option<QueryOptions>) -> ConsulResult<Vec<SessionEntry>>;
-    async fn node(
+    async fn list_sessions(&self, options: Option<QueryOptions>)
+        -> ConsulResult<Vec<SessionEntry>>;
+    async fn list_session_for_node(
         &self,
         node: &str,
         options: Option<QueryOptions>,
     ) -> ConsulResult<Vec<SessionEntry>>;
-    async fn renew(
+    async fn renew_session(
         &self,
         id: &str,
         options: Option<QueryOptions>,
@@ -59,18 +60,18 @@ pub trait Session: Sealed {
 
 #[async_trait]
 impl Session for Client {
-    async fn create(
+    async fn create_session(
         &self,
         session: SessionEntry,
         options: Option<QueryOptions>,
     ) -> ConsulResult<SessionEntry> {
         self.put("/v1/session/create", session, None, options).await
     }
-    async fn destroy(&self, id: &str, options: Option<QueryOptions>) -> ConsulResult<bool> {
+    async fn destroy_session(&self, id: &str, options: Option<QueryOptions>) -> ConsulResult<bool> {
         let path = format!("/v1/session/destroy/{}", id);
         self.put(&path, None as Option<&()>, None, options).await
     }
-    async fn info(
+    async fn get_session_info(
         &self,
         id: &str,
         options: Option<QueryOptions>,
@@ -78,10 +79,13 @@ impl Session for Client {
         let path = format!("/v1/session/info/{}", id);
         self.get(&path, options).await
     }
-    async fn list(&self, options: Option<QueryOptions>) -> ConsulResult<Vec<SessionEntry>> {
+    async fn list_sessions(
+        &self,
+        options: Option<QueryOptions>,
+    ) -> ConsulResult<Vec<SessionEntry>> {
         self.get("/v1/session/list", options).await
     }
-    async fn node(
+    async fn list_session_for_node(
         &self,
         node: &str,
         options: Option<QueryOptions>,
@@ -90,7 +94,7 @@ impl Session for Client {
         self.get(&path, options).await
     }
 
-    async fn renew(
+    async fn renew_session(
         &self,
         id: &str,
         options: Option<QueryOptions>,
