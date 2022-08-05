@@ -2,11 +2,8 @@ name: Publish
 
 on:
   push:
-    # ensure workflow does not run on master branch
-    branches-ignore:
-      - main
     tags:
-      - '*.*.*'
+      - "[0-9]+.[0-9]+.[0-9]+"
 
 env:
   CARGO_TERM_COLOR: always
