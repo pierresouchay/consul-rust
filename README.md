@@ -1,4 +1,4 @@
-# consul-rust [![Build Status](https://github.com/pierresouchay/consul-rust/actions/workflows/rust.yml/badge.svg)](https://github.com/kaylendog/consul-rust/actions?query=branch%3Amaster)
+# consul-rust [![Checks](https://github.com/kaylendog/consul-rust/actions/workflows/check.yml/badge.svg)](https://github.com/kaylendog/consul-rust/actions/workflows/check.yml)
 
 `consul-rust` is a library for interacting with Consul agents via their HTTP API.
 Consul is a service mesh solution providing a full featured control plane
