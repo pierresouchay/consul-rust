@@ -1,23 +1,22 @@
-name: Rust
+name: Checks
 
 on:
-  push:
-    branches:
-      - master
   pull_request:
     branches:
-      - '**'
+      - master
 
 env:
   CARGO_TERM_COLOR: always
 
 jobs:
   check:
-    name: Check
+    name: Run cargo check 
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
+      - name: Checkout repository
+        uses: actions/checkout@v2
+      - name: Set up Rust environment
+        uses: actions-rs/toolchain@v1
         with:
           profile: minimal
           toolchain: stable
@@ -27,18 +26,13 @@ jobs:
           command: check
 
   test:
-    name: Test Suite
+    name: Run test suites
     runs-on: ubuntu-latest
-    env:
-      RUST_TEST_TASKS: 1
     steps:
-      - uses: actions/checkout@v2
-      - name: Setup Consul Agent for tests
-        run: |
-          curl -L -o /tmp/consul.zip https://releases.hashicorp.com/consul/1.5.3/consul_1.5.3_linux_amd64.zip
-          unzip /tmp/consul.zip
-          ./consul agent -config-file data/consul-test.json > /tmp/consul.log &
-      - uses: actions-rs/toolchain@v1
+      - name: Checkout repository
+        uses: actions/checkout@v2
+      - name: Set up Rust environment
+        uses: actions-rs/toolchain@v1
         with:
           profile: minimal
           toolchain: stable
@@ -46,9 +40,12 @@ jobs:
       - uses: actions-rs/cargo@v1
         with:
           command: test
+    services:
+      consul:
+        image: consul
 
   fmt:
-    name: Rustfmt
+    name: Run rustfmt
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
@@ -64,7 +61,7 @@ jobs:
           args: --all -- --check
 
   clippy:
-    name: Clippy
+    name: Run clippy linter
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
@@ -78,3 +75,19 @@ jobs:
         with:
           command: clippy
           args: --all-targets --all-features -- -D warnings
+
+  name: Generate code coverage with Tarpaulin
+    runs-on: ubuntu-latest
+    container:
+      image: xd009642/tarpaulin
+      options: --security-opt seccomp=unconfined
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+      - name: Generate code coverage
+        run: |
+          cargo tarpaulin --verbose --all-features --workspace --timeout 120 --out Xml
+      - name: Upload to codecov.io
+        uses: codecov/codecov-action@v2
+        with:
+          fail_ci_if_error: true

@@ -1,0 +1,22 @@
+name: Publish
+
+on:
+  push:
+    branches:
+      - master
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  publish:
+    steps:
+    - uses: actions/checkout@v2
+    - uses: actions-rs/toolchain@v1
+      with:
+        toolchain: stable
+        override: true
+    - uses: katyo/publish-crates@v1
+      with:
+        registry-token: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+        ignore-unpublished-changes: true
