@@ -1,11 +1,8 @@
-extern crate consul_oxide;
-extern crate rand;
-
 use consul_oxide::{Client, Config, Session, SessionEntry};
 use rand::{distributions::Alphanumeric, thread_rng, Rng};
 
 #[tokio::test]
-async fn session_create_test() {
+async fn test_session_create() {
     let (client, unique_test_identifier) = set_up().await;
 
     assert_eq!(
@@ -27,7 +24,7 @@ async fn session_create_test() {
 }
 
 #[tokio::test]
-async fn session_destroy_test() {
+async fn test_session_destory() {
     let (client, unique_test_identifier) = set_up().await;
 
     let entry =
@@ -53,7 +50,7 @@ async fn session_destroy_test() {
 }
 
 #[tokio::test]
-async fn session_info_test() {
+async fn test_session_info() {
     let (client, unique_test_identifier) = set_up().await;
 
     let entry =
@@ -75,7 +72,7 @@ async fn session_info_test() {
 }
 
 #[tokio::test]
-async fn session_list_test() {
+async fn test_session_list() {
     let (client, unique_test_identifier) = set_up().await;
 
     let entry_names = vec![
@@ -117,19 +114,21 @@ async fn session_list_test() {
     }
 }
 
-// TODO: test session renew - this is currently broken in CI as the consul test instace
-// is run inside Docker, so hostname::get() does not match the hostname of the test instance.
-// #[tokio::test]
+// TODO: test session renew - this is currently broken in CI as the consul test
+// instace is run inside Docker, so hostname::get() does not match the hostname
+// of the test instance. #[tokio::test]
 // async fn session_node_test() {
 //     let (client, unique_test_identifier) = set_up().await;
 
 //     let entry =
-//         SessionEntry { name: Some(unique_test_identifier.to_string()), ..Default::default() };
+//         SessionEntry { name: Some(unique_test_identifier.to_string()),
+// ..Default::default() };
 
-//     let created_session_entry = client.create_session(entry, None).await.unwrap();
-//     let created_session_entry_id = created_session_entry.id.unwrap();
-//     let system_hostname = hostname::get().unwrap().into_string().unwrap();
-//     let session_entries = client.list_session_for_node(&system_hostname, None).await.unwrap();
+//     let created_session_entry = client.create_session(entry,
+// None).await.unwrap();     let created_session_entry_id =
+// created_session_entry.id.unwrap();     let system_hostname =
+// hostname::get().unwrap().into_string().unwrap();     let session_entries =
+// client.list_session_for_node(&system_hostname, None).await.unwrap();
 
 //     assert_eq!(
 //         session_entries
@@ -143,7 +142,7 @@ async fn session_list_test() {
 // }
 
 #[tokio::test]
-async fn session_renew_test() {
+async fn test_renew_session() {
     let (client, unique_test_identifier) = set_up().await;
 
     let entry = SessionEntry { name: Some(unique_test_identifier), ..Default::default() };
