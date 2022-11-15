@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use crate::errors::Error;
 use crate::errors::Result;
-use crate::request::{delete, get, get_vec, put};
+use crate::request::{delete, get, get_vec, put, put_plain};
 use crate::{Client, QueryMeta, QueryOptions, WriteMeta, WriteOptions};
 
 #[derive(Clone, Default, Eq, PartialEq, Serialize, Deserialize, Debug)]
@@ -74,7 +74,7 @@ impl KV for Client {
             }
         }
         let path = format!("/v1/kv/{}", pair.Key);
-        put(&path, Some(&pair.Value), &self.config, params, o)
+        put_plain(&path, Some(pair.Value.clone()), &self.config, params, o)
     }
 
     fn release(&self, pair: &KVPair, o: Option<&WriteOptions>) -> Result<(bool, WriteMeta)> {
