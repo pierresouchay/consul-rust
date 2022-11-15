@@ -5,9 +5,9 @@ use std::str;
 use std::str::FromStr;
 use std::time::Instant;
 
+use reqwest::blocking::Body;
 use reqwest::blocking::Client as HttpClient;
 use reqwest::blocking::RequestBuilder;
-use reqwest::blocking::Body;
 use reqwest::header::HeaderValue;
 use reqwest::StatusCode;
 use serde::de::DeserializeOwned;
@@ -174,10 +174,12 @@ pub fn put<T: Serialize, R: DeserializeOwned>(
     params: HashMap<String, String>,
     options: Option<&WriteOptions>,
 ) -> Result<(R, WriteMeta)> {
-    let req = |http_client: &HttpClient, url: Url| -> RequestBuilder { match body {
-        Some(b) => http_client.put(url).json(b),
-        _ => http_client.put(url)
-    }};
+    let req = |http_client: &HttpClient, url: Url| -> RequestBuilder {
+        match body {
+            Some(b) => http_client.put(url).json(b),
+            _ => http_client.put(url),
+        }
+    };
     write_with_body(path, config, params, options, req)
 }
 
@@ -188,10 +190,12 @@ pub fn put_plain<T: Into<Body>, R: DeserializeOwned>(
     params: HashMap<String, String>,
     options: Option<&WriteOptions>,
 ) -> Result<(R, WriteMeta)> {
-    let req = |http_client: &HttpClient, url: Url| -> RequestBuilder { match body {
-        Some(b) => http_client.put(url).body(b),
-        _ => http_client.put(url)
-    } };
+    let req = |http_client: &HttpClient, url: Url| -> RequestBuilder {
+        match body {
+            Some(b) => http_client.put(url).body(b),
+            _ => http_client.put(url),
+        }
+    };
     write_with_body(path, config, params, options, req)
 }
 
