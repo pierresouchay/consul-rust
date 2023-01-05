@@ -5,6 +5,7 @@ use std::str;
 use std::str::FromStr;
 use std::time::Instant;
 
+use reqwest::blocking::Body;
 use reqwest::blocking::Client as HttpClient;
 use reqwest::blocking::RequestBuilder;
 use reqwest::header::HeaderValue;
@@ -153,7 +154,7 @@ pub fn delete<R: DeserializeOwned>(
     options: Option<&WriteOptions>,
 ) -> Result<(R, WriteMeta)> {
     let req = |http_client: &HttpClient, url: Url| -> RequestBuilder { http_client.delete(url) };
-    write_with_body(path, None as Option<&()>, config, params, options, req)
+    write_with_body(path, config, params, options, req)
 }
 
 /*
@@ -173,20 +174,40 @@ pub fn put<T: Serialize, R: DeserializeOwned>(
     params: HashMap<String, String>,
     options: Option<&WriteOptions>,
 ) -> Result<(R, WriteMeta)> {
-    let req = |http_client: &HttpClient, url: Url| -> RequestBuilder { http_client.put(url) };
-    write_with_body(path, body, config, params, options, req)
+    let req = |http_client: &HttpClient, url: Url| -> RequestBuilder {
+        match body {
+            Some(b) => http_client.put(url).json(b),
+            _ => http_client.put(url),
+        }
+    };
+    write_with_body(path, config, params, options, req)
 }
 
-fn write_with_body<T: Serialize, R: DeserializeOwned, F>(
+pub fn put_raw<T: Into<Body>, R: DeserializeOwned>(
     path: &str,
-    body: Option<&T>,
+    body: Option<T>,
+    config: &Config,
+    params: HashMap<String, String>,
+    options: Option<&WriteOptions>,
+) -> Result<(R, WriteMeta)> {
+    let req = |http_client: &HttpClient, url: Url| -> RequestBuilder {
+        match body {
+            Some(b) => http_client.put(url).body(b),
+            _ => http_client.put(url),
+        }
+    };
+    write_with_body(path, config, params, options, req)
+}
+
+fn write_with_body<R: DeserializeOwned, F>(
+    path: &str,
     config: &Config,
     mut params: HashMap<String, String>,
     options: Option<&WriteOptions>,
     req: F,
 ) -> Result<(R, WriteMeta)>
 where
-    F: Fn(&HttpClient, Url) -> RequestBuilder,
+    F: FnOnce(&HttpClient, Url) -> RequestBuilder,
 {
     let start = Instant::now();
     let datacenter: Option<&String> = options
@@ -201,11 +222,6 @@ where
     let url =
         Url::parse_with_params(&url_str, params.iter()).chain_err(|| "Failed to parse URL")?;
     let builder = req(&config.http_client, url);
-    let builder = if let Some(b) = body {
-        builder.json(b)
-    } else {
-        builder
-    };
     let builder = add_config_options(builder, &config);
     builder
         .send()
