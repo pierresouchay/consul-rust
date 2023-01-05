@@ -183,7 +183,7 @@ pub fn put<T: Serialize, R: DeserializeOwned>(
     write_with_body(path, config, params, options, req)
 }
 
-pub fn put_plain<T: Into<Body>, R: DeserializeOwned>(
+pub fn put_raw<T: Into<Body>, R: DeserializeOwned>(
     path: &str,
     body: Option<T>,
     config: &Config,

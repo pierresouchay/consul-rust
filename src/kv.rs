@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use crate::errors::Error;
 use crate::errors::Result;
-use crate::request::{delete, get, get_vec, put, put_plain};
+use crate::request::{delete, get, get_vec, put, put_raw};
 use crate::{Client, QueryMeta, QueryOptions, WriteMeta, WriteOptions};
 
 #[derive(Clone, Default, Eq, PartialEq, Serialize, Deserialize, Debug)]
@@ -25,6 +25,7 @@ pub trait KV {
     fn get(&self, _: &str, _: Option<&QueryOptions>) -> Result<(Option<KVPair>, QueryMeta)>;
     fn list(&self, _: &str, _: Option<&QueryOptions>) -> Result<(Vec<KVPair>, QueryMeta)>;
     fn put(&self, _: &KVPair, _: Option<&WriteOptions>) -> Result<(bool, WriteMeta)>;
+    fn put_raw(&self, _: &KVPair, _: Option<&WriteOptions>) -> Result<(bool, WriteMeta)>;
     fn release(&self, _: &KVPair, _: Option<&WriteOptions>) -> Result<(bool, WriteMeta)>;
 }
 
@@ -66,6 +67,7 @@ impl KV for Client {
         get_vec(&path, &self.config, params, o)
     }
 
+    /// Put a key-value pair where value is json-encoded
     fn put(&self, pair: &KVPair, o: Option<&WriteOptions>) -> Result<(bool, WriteMeta)> {
         let mut params = HashMap::new();
         if let Some(i) = pair.Flags {
@@ -74,7 +76,19 @@ impl KV for Client {
             }
         }
         let path = format!("/v1/kv/{}", pair.Key);
-        put_plain(&path, Some(pair.Value.clone()), &self.config, params, o)
+        put(&path, Some(&pair.Value), &self.config, params, o)
+    }
+
+    /// Put a raw key-value pair
+    fn put_raw(&self, pair: &KVPair, o: Option<&WriteOptions>) -> Result<(bool, WriteMeta)> {
+        let mut params = HashMap::new();
+        if let Some(i) = pair.Flags {
+            if i != 0 {
+                params.insert(String::from("flags"), i.to_string());
+            }
+        }
+        let path = format!("/v1/kv/{}", pair.Key);
+        put_raw(&path, Some(pair.Value.clone()), &self.config, params, o)
     }
 
     fn release(&self, pair: &KVPair, o: Option<&WriteOptions>) -> Result<(bool, WriteMeta)> {
