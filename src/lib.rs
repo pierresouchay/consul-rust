@@ -13,6 +13,7 @@ pub mod errors;
 pub mod health;
 pub mod kv;
 pub mod session;
+pub mod status;
 
 mod request;
 
@@ -104,6 +105,7 @@ impl Config {
 #[derive(Clone, Debug, Default)]
 pub struct QueryOptions {
     pub datacenter: Option<String>,
+    pub filter: Option<String>,
     pub wait_index: Option<u64>,
     pub wait_time: Option<Duration>,
 }

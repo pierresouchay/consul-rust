@@ -149,12 +149,12 @@ fn session_node_test() {
 
     let (session_entries, _) = client.node(&system_hostname, None).unwrap();
 
-    let filtered_session_entries: Vec<&SessionEntry> = session_entries
+    let filtered_session_entries_count = session_entries
         .iter()
         .filter(|s| s.Name.as_ref().unwrap() == &unique_test_identifier)
-        .collect();
+        .count();
 
-    assert_eq!(filtered_session_entries.len(), 1);
+    assert_eq!(filtered_session_entries_count, 1);
 
     tear_down(&client, &created_session_entry_id);
 }
@@ -200,10 +200,8 @@ fn get_number_of_session_entries_with_matching_name(
 ) -> usize {
     let (session_entries, _) = client.list(None).unwrap();
 
-    let filtered_session_entries: Vec<&SessionEntry> = session_entries
+    session_entries
         .iter()
         .filter(|s| s.Name.as_ref().unwrap() == unique_test_identifier)
-        .collect();
-
-    filtered_session_entries.len()
+        .count()
 }
